@@ -29,7 +29,7 @@ concurrency:
 jobs:
   refresh:
     if: >-
-      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+      github.ref == 'refs/heads/main' &&
       ((github.event_name == 'schedule' && vars.ENABLE_SCHEDULED_SCAN == 'true') ||
       (github.event_name == 'workflow_dispatch' && inputs.refresh))
     runs-on: ubuntu-latest
@@ -39,7 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: main
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
@@ -92,7 +92,7 @@ jobs:
         with:
           # Refresh commits use GITHUB_TOKEN, which does not trigger a new workflow.
           # Build that commit here rather than relying on another push event.
-          ref: ${{ github.event_name == 'pull_request' && github.ref || github.event.repository.default_branch }}
+          ref: ${{ github.event_name == 'pull_request' && github.ref || 'main' }}
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
@@ -124,8 +124,9 @@ jobs:
 
   deploy:
     if: >-
+      always() && !cancelled() && needs.check-and-build.result == 'success' &&
       github.event_name != 'pull_request' &&
-      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+      github.ref == 'refs/heads/main'
     needs: check-and-build
     runs-on: ubuntu-latest
     permissions:
