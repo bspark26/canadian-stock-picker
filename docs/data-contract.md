@@ -19,6 +19,7 @@ type Opportunity = {
   dataQuality: 'Complete' | 'Partial';
   analysisKind: 'Rules' | 'AI';
   optionsAvailable: boolean | null;
+  tradePlan?: TradePlan;
 };
 type Scan = {
   schemaVersion: 1; mode: 'demo' | 'live'; generatedAt: string;
@@ -36,3 +37,34 @@ type Scan = {
 Demo fixtures are conspicuously labelled illustrative, not current market data. A failed scan must not overwrite the last successful data with fabricated output or a fresh timestamp. Show skipped/failed counts and incomplete exchange coverage honestly.
 
 Financial statement amounts (`cash`, `debt`, operating/free cash flow) use `financialCurrency`, which can differ from the trading `currency`. If unknown, label reporting currency unknown. Never combine a CAD market cap with USD financial amounts in a manually derived ratio without conversion. Yahoo-supplied ratios retain their documented basis.
+
+## Conditional entry and return scenarios
+
+`tradePlan` is optional for older snapshots. New snapshots attach the following object. All prices use the row's trading currency; percent values use display units. This technical timing plan is separate from the company's long-term investment thesis.
+
+```ts
+type HistoricalEvidence = {
+  samples: number; targetFirst: number; stopFirst: number; expired: number;
+  unfilled: number; ambiguous: number;
+  hitRatePercent: number | null;
+  intervalLowPercent: number | null; intervalHighPercent: number | null;
+  asOf: string | null; method: string;
+};
+type TradePlan = {
+  status: 'Ready' | 'Wait' | 'Unavailable'; asOf: string;
+  horizonSessions: number; entryValidForSessions: number;
+  entryLow: number | null; entryHigh: number | null; referenceEntry: number | null;
+  target: number | null; invalidation: number | null;
+  upsidePercent: number | null; downsidePercent: number | null;
+  rewardRisk: number | null;
+  basis: string; explanation: string;
+  probability: { value: number | null; status: 'Not calibrated'; event: string; reason: string };
+  historical?: HistoricalEvidence;
+};
+```
+
+Default plan window: 20 trading sessions after a qualifying entry, with the proposed entry valid for five sessions following `asOf`. Opening gaps at or below invalidation cancel a proposed entry. Target and invalidation are conditional scenarios, not guaranteed fills or exit prices. Returns use the stated reference entry before fees/slippage; `downsidePercent` is negative. `rewardRisk` is calculated at the upper edge of the entry range (the least favourable entry), rather than advertising a favourable midpoint ratio.
+
+Prices are rounded before calculations. Ready or Wait plans satisfy `0 < invalidation < entryLow <= referenceEntry <= entryHigh < target`. A missing or broken setup yields Unavailable with null price/return fields. Probability remains null until out-of-sample calibration validates the explicitly named event: target touched before invalidation within 20 sessions after entry. A screening score or retrospective hit rate must never be substituted for that probability.
+
+Historical evidence, when available, is a same-symbol, price-only, chronological diagnostic using prior signals and completed future windows. Its target-first frequency is labelled historical, not a calibrated forecast. Unfilled entries are separate from filled outcomes; ambiguous daily bars use conservative ordering and are counted. Synthetic demo data never supplies real-world probabilities or historical hit-rate claims.

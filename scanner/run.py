@@ -13,6 +13,7 @@ from urllib.parse import quote
 
 from .fundamentals import evaluate
 from .technicals import indicators, technical_score, classify_setup, number
+from .trade_plans import build_trade_plan
 from .yahoo import Cache, EXCHANGES, SUFFIXES, YahooSource, SourceError
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -82,6 +83,7 @@ def opportunity(symbol, snapshot, frame, currency, payload):
             {"label": "Yahoo company profile / issuer links", "url": f"https://finance.yahoo.com/quote/{quote(symbol)}/profile/", "asOf": None},
         ],
         "priceAsOf": price_as_of, "fundamentalsAsOf": financial_date, "dataQuality": quality, "analysisKind": "Rules", "optionsAvailable": None,
+        "tradePlan": build_trade_plan(price, technicals, setup, price_as_of),
     }
 
 
@@ -100,6 +102,7 @@ def live_scan(args, settings, source=None):
         warnings.append(f"Development --limit {args.limit} enabled; universe coverage is partial.")
     scanned, failed, eligible, skipped_cdr, non_cad, fundamental_failures, stale = 0, 0, 0, 0, 0, 0, 0
     opportunities = []
+    candidate_histories = {}
     for index, snapshot in enumerate(snapshots):
         symbol = snapshot["symbol"]
         print(f"[{index + 1}/{len(snapshots)}] {symbol}", file=sys.stderr, flush=True)
@@ -137,6 +140,7 @@ def live_scan(args, settings, source=None):
             if not payload:
                 result["risks"].append("Fundamental retrieval was unavailable or intentionally limited; this row has technical evidence only.")
             opportunities.append(result)
+            candidate_histories[symbol] = frame
         except Exception as exc:
             failed += 1
             print(f"Skipped {symbol}: {type(exc).__name__}: {exc}", file=sys.stderr)
@@ -161,6 +165,19 @@ def live_scan(args, settings, source=None):
     if len(opportunities) > settings["output_limit"]:
         warnings.append(f"Showing the top {settings['output_limit']} research candidates from {eligible} eligible listings; this is a display shortlist, not the entire universe.")
         opportunities = opportunities[:settings["output_limit"]]
+    # Evaluate only the displayed shortlist; reuse fetched history without API calls.
+    from .historical import historical_evidence
+    historical_failures = 0
+    for row in opportunities:
+        if row["tradePlan"]["status"] == "Unavailable":
+            continue
+        try:
+            row["tradePlan"]["historical"] = historical_evidence(candidate_histories[row["symbol"]], row["setup"])
+        except Exception as exc:
+            historical_failures += 1
+            print(f"Historical diagnostic unavailable for {row['symbol']}: {type(exc).__name__}", file=sys.stderr)
+    if historical_failures:
+        warnings.append(f"Historical entry diagnostics unavailable for {historical_failures} shortlist rows; forecast probabilities remain uncalibrated.")
     analyzed, model = 0, None
     if args.ai:
         from .ai import curate

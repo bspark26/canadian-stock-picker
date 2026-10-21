@@ -6,6 +6,42 @@ const isNumber = (value) => typeof value === 'number' && Number.isFinite(value);
 const validDate = (value) => typeof value === 'string' && Number.isFinite(Date.parse(value));
 const strings = (value) => Array.isArray(value) && value.every((item) => typeof item === 'string');
 
+function validateTradePlan(plan, item, mode) {
+  const reject = (reason) => fail(`${item.symbol}: invalid trade plan (${reason}).`);
+  const numericKeys = ['entryLow', 'entryHigh', 'referenceEntry', 'target', 'invalidation', 'upsidePercent', 'downsidePercent', 'rewardRisk'];
+  if (!plan || !['Ready', 'Wait', 'Unavailable'].includes(plan.status) || !validDate(plan.asOf)) reject('status or date');
+  if (plan.asOf !== item.priceAsOf || plan.horizonSessions !== 20 || plan.entryValidForSessions !== 5) reject('event timing');
+  if (typeof plan.basis !== 'string' || !plan.basis || typeof plan.explanation !== 'string' || !plan.explanation) reject('missing rationale');
+  if (!plan.probability || plan.probability.value !== null || plan.probability.status !== 'Not calibrated'
+    || plan.probability.event !== 'Target touched before invalidation within 20 trading sessions after a qualifying entry.'
+    || typeof plan.probability.reason !== 'string' || !plan.probability.reason) reject('unvalidated probability');
+  if (plan.status === 'Unavailable') {
+    if (!numericKeys.every((key) => plan[key] === null)) reject('unavailable levels must be null');
+  } else {
+    if (!numericKeys.every((key) => isNumber(plan[key]))) reject('missing level or return');
+    const { invalidation: stop, entryLow: low, referenceEntry: entry, entryHigh: high, target } = plan;
+    if (!(0 < stop && stop < low && low >= 1 && low <= entry && entry <= high && high < target)) reject('price ordering');
+    if (plan.rewardRisk < 1.5 || Math.abs(plan.rewardRisk - (target - high) / (high - stop)) > 0.0011
+      || Math.abs(plan.upsidePercent - (target / entry - 1) * 100) > 0.011
+      || Math.abs(plan.downsidePercent - (stop / entry - 1) * 100) > 0.011) reject('return calculation');
+    if ((plan.status === 'Ready') !== (low <= item.price && item.price <= high)) reject('entry readiness');
+  }
+  if (plan.historical === undefined) return;
+  const history = plan.historical;
+  if (!history || !['samples', 'targetFirst', 'stopFirst', 'expired', 'unfilled', 'ambiguous'].every((key) => Number.isInteger(history[key]) && history[key] >= 0)
+    || history.samples !== history.targetFirst + history.stopFirst + history.expired
+    || history.ambiguous > history.samples || typeof history.method !== 'string' || !history.method) reject('historical counts');
+  if (history.asOf !== null && !validDate(history.asOf)) reject('historical date');
+  if (history.samples + history.unfilled > 0 && history.asOf === null) reject('missing historical date');
+  const rates = [history.hitRatePercent, history.intervalLowPercent, history.intervalHighPercent];
+  if (history.samples < 20) {
+    if (!rates.every((value) => value === null)) reject('insufficient historical sample');
+  } else if (!rates.every((value) => isNumber(value) && value >= 0 && value <= 100)
+    || history.intervalLowPercent > history.hitRatePercent || history.hitRatePercent > history.intervalHighPercent
+    || Math.abs(history.hitRatePercent - history.targetFirst / history.samples * 100) > 0.011) reject('historical frequency');
+  if (mode === 'demo' && rates.some((value) => value !== null)) reject('synthetic historical success claim');
+}
+
 export function validateSnapshot(data, { expectLive = false } = {}) {
   if (!data || data.schemaVersion !== 1) fail('Unsupported snapshot schema.');
   if (!['demo', 'live'].includes(data.mode)) fail('Snapshot mode must be demo or live.');
@@ -48,6 +84,7 @@ export function validateSnapshot(data, { expectLive = false } = {}) {
     if (!validDate(item.priceAsOf)) fail(`${item.symbol}: missing price timestamp.`);
     if (item.fundamentalsAsOf !== null && !validDate(item.fundamentalsAsOf)) fail(`${item.symbol}: invalid statement date.`);
     if (item.optionsAvailable !== null && typeof item.optionsAvailable !== 'boolean') fail(`${item.symbol}: invalid options availability.`);
+    if (item.tradePlan !== undefined) validateTradePlan(item.tradePlan, item, data.mode);
     const numericGroups = {
       technicals: ['rsi14', 'sma20', 'sma50', 'sma200', 'support', 'resistance', 'atr14', 'relativeVolume', 'return20d'],
       fundamentals: ['cash', 'debt', 'revenueGrowth', 'freeCashFlow', 'operatingCashFlow', 'cashRunwayMonths', 'profitMargin', 'priceToSales'],

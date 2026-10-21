@@ -30,3 +30,9 @@ Pre-revenue developers require project and financing research that Yahoo ratios 
 Options Lab calculates expiry payoffs from manually entered assumptions and quotes. It does not fetch Canadian option chains, validate account permissions, or predict pre-expiry option prices. Cash, debt and cash flows retain their reporting currency, which can differ from the stock's trading currency.
 
 The included sample snapshot is synthetic and clearly marked. It is for reviewing functionality, never current investment evidence. Public display of third-party quotes and histories needs appropriate data rights; selecting a free host does not grant redistribution permission.
+
+## Entry and return scenarios
+
+`scanner.trade_plans` computes rounded entry ranges, conditional targets, invalidation levels and price-change scenarios from the signal's preceding range and ATR. Reward/risk uses the least favourable entry in the range. `scanner.historical` evaluates prior same-symbol signals with no future data in the signal calculation, non-overlapping observation windows, explicit entry validity, and conservative daily-bar ordering. It runs only on the displayed shortlist and reuses already downloaded OHLCV history.
+
+Historical frequency and model calibration are separate. The app deliberately withholds a forecast probability until an independently validated chronological model exists. No LLM confidence percentage or historical hit rate is labelled as the chance of a future prediction being true.

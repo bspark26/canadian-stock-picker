@@ -104,7 +104,7 @@ jobs:
       - run: npm ci
       - run: python -m pip install -r requirements.txt
       - run: python -m pytest tests
-      - run: node --experimental-strip-types --test tests/options.test.mjs
+      - run: node --experimental-strip-types --test tests/*.test.mjs
       - run: node scripts/validate-data.mjs public/data/latest.json
       - name: Build dashboard for the Pages subdirectory
         env:

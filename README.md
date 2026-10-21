@@ -81,7 +81,7 @@ Scan settings live in `config/defaults.json`. Liquidity filtering defaults to ze
 
 ```sh
 python -m pytest tests
-node --experimental-strip-types --test tests/options.test.mjs
+node --experimental-strip-types --test tests/*.test.mjs
 node scripts/validate-data.mjs public/data/latest.json
 npm run build
 ```
@@ -98,8 +98,22 @@ npm run preview
 - Daily-price trend, momentum, historical range and liquidity evidence.
 - Available cash, debt, growth, profitability and cash-flow evidence, with missing values and reporting currencies shown.
 - Separate fundamental and technical rankings, research explanations and risks.
+- Conditional entry ranges, target-price upside, invalidation downside, and reward/risk, using a stated 20-session window after entry.
+- Same-symbol historical entry diagnostics where sufficient daily history exists; forecast probabilities remain labelled **Not calibrated** until independently validated.
 - Expiry payoff examples for long calls, long puts, covered calls and protective puts using manually entered assumptions.
 
 Scores are screening heuristics, not return probabilities. Yahoo fundamentals alone cannot verify management quality, drill results, mine construction plans or future financing. Company filings and releases still need review. Options Lab does not retrieve chains or confirm TD account permissions and cannot value an option before expiry. See [architecture](docs/architecture.md) and [data contract](docs/data-contract.md) for implementation boundaries.
+
+## Entry scenarios and probability
+
+The entry plan is a conditional technical scenario, separate from a company's long-term investment thesis. Normal range setups propose a zone near the preceding 20-session low, targeting the prior range high. Existing breakouts instead propose a retest of the prior range high with an explicitly ATR-derived objective. Invalidation uses an ATR buffer. Rounded prices must leave at least 1.5× target reward/risk at the upper edge of the entry range; unsupported or broken setups get no forced entry recommendation.
+
+Potential returns are price changes from the stated reference entry before fees and slippage. They are not expected returns, valuations or guaranteed fills. The proposed entry is valid for five sessions following the signal's as-of date and must be reassessed if conditions change. Skip an opening gap at or below invalidation. A stop/invalidation level is not a guaranteed exit price.
+
+The historical diagnostic rebuilds earlier signals using only information available on each signal day, models conditional reference-entry limit fills for five sessions while skipping opening gaps at or below invalidation, separates unfilled entries, and counts target-first, stop-first and expired filled outcomes. It requires a complete post-entry 20-session window and uses conservative daily-bar ordering for ambiguous cases. Observations do not overlap. This is retrospective price-only evidence from the provider's available history, with missing/delisted-universe limitations; it is not a calibrated forecast. A same-symbol historical hit rate can be calculated after at least 20 filled observations, with a Wilson interval, but the dashboard currently shows supporting counts rather than presenting that frequency as a future probability.
+
+The forecast probability field remains null/Not calibrated until a separate chronological training, calibration and untouched test process validates the named target-before-invalidation event. An AI-generated confidence number and a screening score cannot substitute for that validation. Demo data never produces real historical probability claims.
+
+Method references: [probability calibration](https://scikit-learn.org/stable/modules/calibration.html), [CIRO guidance on stop-loss orders](https://www.ciro.ca/newsroom/publications/guidance-respecting-management-stop-loss-orders-0).
 
 Primary service references: [GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages), [Pages workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages), [GitHub Actions secrets](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets), [yfinance](https://github.com/ranaroussi/yfinance), [OpenAI model](https://developers.openai.com/api/docs/models/gpt-6.1-sol).

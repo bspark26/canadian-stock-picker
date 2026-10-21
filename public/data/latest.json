@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "mode": "demo",
-  "generatedAt": "2026-10-21T15:04:06.185408+00:00",
+  "generatedAt": "2026-10-21T15:52:01.191013+00:00",
   "marketAsOf": "2026-10-20",
   "status": "partial",
   "universe": {
@@ -1391,7 +1391,29 @@
       "fundamentalsAsOf": "2025-12-31",
       "dataQuality": "Complete",
       "analysisKind": "Rules",
-      "optionsAvailable": null
+      "optionsAvailable": null,
+      "tradePlan": {
+        "status": "Unavailable",
+        "asOf": "2026-10-20",
+        "horizonSessions": 20,
+        "entryValidForSessions": 5,
+        "entryLow": null,
+        "entryHigh": null,
+        "referenceEntry": null,
+        "target": null,
+        "invalidation": null,
+        "upsidePercent": null,
+        "downsidePercent": null,
+        "rewardRisk": null,
+        "basis": "Conditional technical scenario",
+        "explanation": "The historical target leaves less than 1.5\u00d7 reward/risk at the upper entry price; no entry recommendation is made.",
+        "probability": {
+          "value": null,
+          "status": "Not calibrated",
+          "event": "Target touched before invalidation within 20 trading sessions after a qualifying entry.",
+          "reason": "No out-of-sample calibrated model has validated this event. Screening scores and historical hit rates are not forecast probabilities."
+        }
+      }
     },
     {
       "symbol": "DEMOB.V",
@@ -2758,7 +2780,29 @@
       "fundamentalsAsOf": "2025-12-31",
       "dataQuality": "Partial",
       "analysisKind": "Rules",
-      "optionsAvailable": null
+      "optionsAvailable": null,
+      "tradePlan": {
+        "status": "Unavailable",
+        "asOf": "2026-10-20",
+        "horizonSessions": 20,
+        "entryValidForSessions": 5,
+        "entryLow": null,
+        "entryHigh": null,
+        "referenceEntry": null,
+        "target": null,
+        "invalidation": null,
+        "upsidePercent": null,
+        "downsidePercent": null,
+        "rewardRisk": null,
+        "basis": "Conditional technical scenario",
+        "explanation": "The historical target leaves less than 1.5\u00d7 reward/risk at the upper entry price; no entry recommendation is made.",
+        "probability": {
+          "value": null,
+          "status": "Not calibrated",
+          "event": "Target touched before invalidation within 20 trading sessions after a qualifying entry.",
+          "reason": "No out-of-sample calibrated model has validated this event. Screening scores and historical hit rates are not forecast probabilities."
+        }
+      }
     },
     {
       "symbol": "DEMOC.TO",
@@ -4120,7 +4164,29 @@
       "fundamentalsAsOf": "2025-12-31",
       "dataQuality": "Complete",
       "analysisKind": "Rules",
-      "optionsAvailable": null
+      "optionsAvailable": null,
+      "tradePlan": {
+        "status": "Wait",
+        "asOf": "2026-10-20",
+        "horizonSessions": 20,
+        "entryValidForSessions": 5,
+        "entryLow": 38.39,
+        "entryHigh": 38.97,
+        "referenceEntry": 38.68,
+        "target": 41.9,
+        "invalidation": 37.52,
+        "upsidePercent": 8.32,
+        "downsidePercent": -3.0,
+        "rewardRisk": 2.021,
+        "basis": "Prior 20-session range; ATR-buffered entry and invalidation",
+        "explanation": "Consider a pullback near the preceding 20-session range low, with the prior range high as a conditional target. Entry is conditional for the next five sessions; skip an opening gap at or below invalidation and reassess if the setup changes.",
+        "probability": {
+          "value": null,
+          "status": "Not calibrated",
+          "event": "Target touched before invalidation within 20 trading sessions after a qualifying entry.",
+          "reason": "No out-of-sample calibrated model has validated this event. Screening scores and historical hit rates are not forecast probabilities."
+        }
+      }
     },
     {
       "symbol": "DEMOD.CN",
@@ -5482,7 +5548,29 @@
       "fundamentalsAsOf": "2025-12-31",
       "dataQuality": "Complete",
       "analysisKind": "Rules",
-      "optionsAvailable": null
+      "optionsAvailable": null,
+      "tradePlan": {
+        "status": "Ready",
+        "asOf": "2026-10-20",
+        "horizonSessions": 20,
+        "entryValidForSessions": 5,
+        "entryLow": 4.18,
+        "entryHigh": 4.24,
+        "referenceEntry": 4.21,
+        "target": 4.65,
+        "invalidation": 4.08,
+        "upsidePercent": 10.45,
+        "downsidePercent": -3.09,
+        "rewardRisk": 2.562,
+        "basis": "Prior 20-session range; ATR-buffered entry and invalidation",
+        "explanation": "Consider a pullback near the preceding 20-session range low, with the prior range high as a conditional target. Entry is conditional for the next five sessions; skip an opening gap at or below invalidation and reassess if the setup changes.",
+        "probability": {
+          "value": null,
+          "status": "Not calibrated",
+          "event": "Target touched before invalidation within 20 trading sessions after a qualifying entry.",
+          "reason": "No out-of-sample calibrated model has validated this event. Screening scores and historical hit rates are not forecast probabilities."
+        }
+      }
     },
     {
       "symbol": "DEMOE.NE",
@@ -6844,7 +6932,29 @@
       "fundamentalsAsOf": "2025-12-31",
       "dataQuality": "Complete",
       "analysisKind": "Rules",
-      "optionsAvailable": null
+      "optionsAvailable": null,
+      "tradePlan": {
+        "status": "Unavailable",
+        "asOf": "2026-10-20",
+        "horizonSessions": 20,
+        "entryValidForSessions": 5,
+        "entryLow": null,
+        "entryHigh": null,
+        "referenceEntry": null,
+        "target": null,
+        "invalidation": null,
+        "upsidePercent": null,
+        "downsidePercent": null,
+        "rewardRisk": null,
+        "basis": "Conditional technical scenario",
+        "explanation": "The historical target leaves less than 1.5\u00d7 reward/risk at the upper entry price; no entry recommendation is made.",
+        "probability": {
+          "value": null,
+          "status": "Not calibrated",
+          "event": "Target touched before invalidation within 20 trading sessions after a qualifying entry.",
+          "reason": "No out-of-sample calibrated model has validated this event. Screening scores and historical hit rates are not forecast probabilities."
+        }
+      }
     },
     {
       "symbol": "DEMOF.TO",
@@ -8206,7 +8316,29 @@
       "fundamentalsAsOf": "2025-12-31",
       "dataQuality": "Complete",
       "analysisKind": "Rules",
-      "optionsAvailable": null
+      "optionsAvailable": null,
+      "tradePlan": {
+        "status": "Wait",
+        "asOf": "2026-10-20",
+        "horizonSessions": 20,
+        "entryValidForSessions": 5,
+        "entryLow": 9.81,
+        "entryHigh": 9.95,
+        "referenceEntry": 9.88,
+        "target": 10.72,
+        "invalidation": 9.59,
+        "upsidePercent": 8.5,
+        "downsidePercent": -2.94,
+        "rewardRisk": 2.139,
+        "basis": "Prior 20-session range; ATR-buffered entry and invalidation",
+        "explanation": "Consider a pullback near the preceding 20-session range low, with the prior range high as a conditional target. Entry is conditional for the next five sessions; skip an opening gap at or below invalidation and reassess if the setup changes.",
+        "probability": {
+          "value": null,
+          "status": "Not calibrated",
+          "event": "Target touched before invalidation within 20 trading sessions after a qualifying entry.",
+          "reason": "No out-of-sample calibrated model has validated this event. Screening scores and historical hit rates are not forecast probabilities."
+        }
+      }
     }
   ]
 }
