@@ -10,6 +10,7 @@
   "page_size": 250,
   "max_pages_per_exchange": 100,
   "output_limit": 100,
+  "probability_model": "models/probability.json",
   "ai_max_companies": 10,
   "ai_max_output_tokens": 1000,
   "ai_max_spend_usd": 0.5,

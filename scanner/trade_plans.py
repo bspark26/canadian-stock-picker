@@ -79,7 +79,9 @@ def build_trade_plan(price, technicals, setup, as_of):
         result["explanation"] = "The historical target leaves less than 1.5× reward/risk at the upper entry price; no entry recommendation is made."
         return result
     result.update({
-        "status": "Ready" if low <= close <= high else "Wait",
+        # Match the six-decimal published close; vendor float noise must not
+        # label a displayed boundary price as outside its entry zone.
+        "status": "Ready" if low <= round(close, 6) <= high else "Wait",
         "entryLow": low, "entryHigh": high, "referenceEntry": entry,
         "target": target, "invalidation": stop,
         "upsidePercent": round((target / entry - 1) * 100, 2),

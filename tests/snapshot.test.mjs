@@ -79,3 +79,45 @@ test('synthetic historical success rates cannot be published as evidence', () =>
   plan.historical = structuredClone(history);
   assert.throws(() => validateSnapshot(data), /synthetic historical success claim/);
 });
+
+function estimatedScenario() {
+  const result = scenario();
+  result.plan.probability = {
+    value: 58, status: 'Estimated', event: result.plan.probability.event,
+    reason: 'Conditional on entry filling; supported by independent historical tests.',
+    modelVersion: 'target-before-stop-logit-v1', asOf: result.item.priceAsOf,
+    validation: { testSamples: 1000, testSymbols: 40, brier: 0.20, baselineBrier: 0.24,
+      calibrationError: 0.04, testStart: '2020-01-01', testEnd: result.item.priceAsOf,
+      setupSamples: 300, binSamples: 250, observedHitRatePercent: 56 },
+  };
+  return result;
+}
+
+test('a live estimate requires independent evidence and supported sample counts', () => {
+  const { data, plan } = estimatedScenario();
+  validateSnapshot(data);
+  plan.probability.validation.binSamples = 12;
+  assert.throws(() => validateSnapshot(data), /probability sample support/);
+});
+
+test('a failing baseline comparison or future outcomes cannot publish a forecast', () => {
+  const first = estimatedScenario();
+  first.plan.probability.validation.brier = 0.25;
+  assert.throws(() => validateSnapshot(first.data), /probability validation evidence/);
+  const second = estimatedScenario();
+  second.plan.probability.validation.testEnd = '2099-01-01';
+  assert.throws(() => validateSnapshot(second.data), /probability validation evidence/);
+});
+
+test('a real model estimate cannot be attached to a synthetic company', () => {
+  const { data } = estimatedScenario();
+  data.mode = 'demo';
+  assert.throws(() => validateSnapshot(data), /unvalidated probability/);
+});
+
+test('withholding an unsupported estimate remains a valid snapshot', () => {
+  const { data, plan } = scenario();
+  plan.probability.status = 'Insufficient evidence';
+  plan.probability.reason = 'This setup has too few independent test cases.';
+  validateSnapshot(data);
+});

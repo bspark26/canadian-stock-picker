@@ -6,15 +6,40 @@ const isNumber = (value) => typeof value === 'number' && Number.isFinite(value);
 const validDate = (value) => typeof value === 'string' && Number.isFinite(Date.parse(value));
 const strings = (value) => Array.isArray(value) && value.every((item) => typeof item === 'string');
 
+function validateProbability(probability, plan, item, mode) {
+  const reject = (reason) => fail(`${item.symbol}: invalid trade plan (${reason}).`);
+  if (!probability || !['Not calibrated', 'Insufficient evidence', 'Estimated'].includes(probability.status)
+    || probability.event !== 'Target touched before invalidation within 20 trading sessions after a qualifying entry.'
+    || typeof probability.reason !== 'string' || !probability.reason) reject('unvalidated probability');
+  if (probability.status !== 'Estimated') {
+    if (probability.value !== null) reject('unvalidated probability');
+    return;
+  }
+  if (mode !== 'live' || plan.status === 'Unavailable') reject('unvalidated probability');
+  if (!isNumber(probability.value) || !Number.isInteger(probability.value) || probability.value < 1 || probability.value > 99
+    || typeof probability.modelVersion !== 'string' || !probability.modelVersion || !validDate(probability.asOf)) reject('unvalidated probability');
+  const evidence = probability.validation;
+  if (!evidence || !Number.isInteger(evidence.testSamples) || evidence.testSamples < 300
+    || !Number.isInteger(evidence.testSymbols) || evidence.testSymbols < 20 || evidence.testSymbols > evidence.testSamples
+    || !isNumber(evidence.brier) || evidence.brier < 0 || !isNumber(evidence.baselineBrier) || evidence.baselineBrier > 1
+    || evidence.brier >= evidence.baselineBrier || !isNumber(evidence.calibrationError) || evidence.calibrationError < 0 || evidence.calibrationError > 0.10
+    || !validDate(evidence.testStart) || !validDate(evidence.testEnd) || evidence.testStart > evidence.testEnd
+    || evidence.testEnd > item.priceAsOf || evidence.testEnd > probability.asOf) reject('probability validation evidence');
+  for (const [key, minimum] of [['setupSamples', 75], ['binSamples', 50]]) {
+    if (!Number.isInteger(evidence[key]) || evidence[key] < minimum || evidence[key] > evidence.testSamples) reject('probability sample support');
+  }
+  if (!isNumber(evidence.observedHitRatePercent) || evidence.observedHitRatePercent < 0 || evidence.observedHitRatePercent > 100) reject('probability sample support');
+  const day = Date.parse(item.priceAsOf);
+  if (Math.abs(day - Date.parse(probability.asOf)) > 120 * 86400000 || day - Date.parse(evidence.testEnd) > 120 * 86400000) reject('stale probability evidence');
+}
+
 function validateTradePlan(plan, item, mode) {
   const reject = (reason) => fail(`${item.symbol}: invalid trade plan (${reason}).`);
   const numericKeys = ['entryLow', 'entryHigh', 'referenceEntry', 'target', 'invalidation', 'upsidePercent', 'downsidePercent', 'rewardRisk'];
   if (!plan || !['Ready', 'Wait', 'Unavailable'].includes(plan.status) || !validDate(plan.asOf)) reject('status or date');
   if (plan.asOf !== item.priceAsOf || plan.horizonSessions !== 20 || plan.entryValidForSessions !== 5) reject('event timing');
   if (typeof plan.basis !== 'string' || !plan.basis || typeof plan.explanation !== 'string' || !plan.explanation) reject('missing rationale');
-  if (!plan.probability || plan.probability.value !== null || plan.probability.status !== 'Not calibrated'
-    || plan.probability.event !== 'Target touched before invalidation within 20 trading sessions after a qualifying entry.'
-    || typeof plan.probability.reason !== 'string' || !plan.probability.reason) reject('unvalidated probability');
+  validateProbability(plan.probability, plan, item, mode);
   if (plan.status === 'Unavailable') {
     if (!numericKeys.every((key) => plan[key] === null)) reject('unavailable levels must be null');
   } else {

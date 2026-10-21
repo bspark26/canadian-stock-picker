@@ -178,6 +178,20 @@ def live_scan(args, settings, source=None):
             print(f"Historical diagnostic unavailable for {row['symbol']}: {type(exc).__name__}", file=sys.stderr)
     if historical_failures:
         warnings.append(f"Historical entry diagnostics unavailable for {historical_failures} shortlist rows; forecast probabilities remain uncalibrated.")
+    # The locally trained JSON model runs here without another service or AI call.
+    # Missing, stale or unsupported evidence fails closed on each individual plan.
+    from .probability import predict_probability
+    model_path = ROOT / settings.get("probability_model", "models/probability.json")
+    try:
+        probability_model = json.loads(model_path.read_text())
+    except (OSError, ValueError):
+        probability_model = None
+    for row in opportunities:
+        row["tradePlan"]["probability"] = predict_probability(
+            row["tradePlan"], row["technicals"],
+            {"price": row["price"], "averageDailyValue": row["averageDailyValue"], "setup": row["setup"]},
+            probability_model,
+        )
     analyzed, model = 0, None
     if args.ai:
         from .ai import curate

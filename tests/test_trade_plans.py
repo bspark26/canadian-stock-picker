@@ -27,6 +27,12 @@ def test_close_inside_entry_band_is_ready_without_claiming_a_live_fill():
     assert plan["asOf"] == "2026-10-20"
 
 
+@pytest.mark.parametrize("close", [10.1 - 1e-8, 10.5 + 1e-8])
+def test_vendor_float_noise_at_a_published_entry_boundary_does_not_change_readiness(close):
+    plan = build_trade_plan(close, metrics(), "Pullback", "2026-10-20")
+    assert plan["status"] == "Ready"
+
+
 def test_breakout_uses_a_disclosed_atr_projection_and_waits_for_a_retest():
     plan = build_trade_plan(16, metrics(), "Trend continuation", "2026-10-20")
     assert plan["status"] == "Wait"

@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "target-before-stop-logit-v1",
+  "status": "Validated",
+  "reason": "Preset chronological validation gates passed; estimates remain conditional on the supplied universe and execution assumptions.",
+  "event": "Target touched before invalidation within 20 trading sessions after a qualifying entry.",
+  "trainedAt": "2026-10-21",
+  "gates": {
+    "trainingSamples": 500,
+    "calibrationSamples": 200,
+    "testSamples": 300,
+    "symbols": 40,
+    "testSymbols": 20,
+    "calibrationEachClass": 30,
+    "testEachClass": 50,
+    "maxCalibrationError": 0.1,
+    "maxBandCalibrationError": 0.15,
+    "maxSetupCalibrationError": 0.15,
+    "minDailyValue": 50000,
+    "setupTestSamples": 75,
+    "binTestSamples": 50,
+    "maxAgeDays": 120
+  },
+  "data": {
+    "inputEvents": 5745,
+    "acceptedEvents": 5745,
+    "rejectedEvents": 0,
+    "symbols": 91
+  },
+  "scope": "Price-only, conditional-on-fill model of supplied historical listings; current-listing data has survivorship and Yahoo corporate-action limitations. No fees, spreads or execution guarantee.",
+  "splits": {
+    "training": {
+      "samples": 3008,
+      "symbols": 53,
+      "start": "2017-08-08",
+      "end": "2023-04-26",
+      "outcomeEnd": "2023-05-26",
+      "targetFirst": 463
+    },
+    "calibration": {
+      "samples": 1189,
+      "symbols": 60,
+      "start": "2023-05-31",
+      "end": "2025-01-10",
+      "outcomeEnd": "2025-02-10",
+      "targetFirst": 218
+    },
+    "test": {
+      "samples": 1383,
+      "symbols": 89,
+      "start": "2025-02-11",
+      "end": "2026-09-18",
+      "outcomeEnd": "2026-10-20",
+      "targetFirst": 315
+    },
+    "purgedTraining": 88,
+    "purgedCalibration": 52
+  },
+  "validation": {
+    "testSamples": 1383,
+    "testSymbols": 89,
+    "testStart": "2025-02-11",
+    "testEnd": "2026-10-20",
+    "brier": 0.167106,
+    "baselineBrier": 0.177861,
+    "logLoss": 0.510237,
+    "baselineLogLoss": 0.542785,
+    "baselineRatePercent": 18.33,
+    "calibrationError": 0.029049,
+    "bins": [
+      {
+        "index": 0,
+        "lowPercent": 0,
+        "highPercent": 20,
+        "samples": 740,
+        "targetFirst": 103,
+        "predictedPercent": 14.05,
+        "observedHitRatePercent": 13.92,
+        "intervalLowPercent": 11.61,
+        "intervalHighPercent": 16.6
+      },
+      {
+        "index": 1,
+        "lowPercent": 20,
+        "highPercent": 40,
+        "samples": 635,
+        "targetFirst": 207,
+        "predictedPercent": 26.69,
+        "observedHitRatePercent": 32.6,
+        "intervalLowPercent": 29.07,
+        "intervalHighPercent": 36.34
+      },
+      {
+        "index": 2,
+        "lowPercent": 40,
+        "highPercent": 60,
+        "samples": 8,
+        "targetFirst": 5,
+        "predictedPercent": 41.44,
+        "observedHitRatePercent": 62.5,
+        "intervalLowPercent": 30.57,
+        "intervalHighPercent": 86.32
+      },
+      {
+        "index": 3,
+        "lowPercent": 60,
+        "highPercent": 80,
+        "samples": 0,
+        "targetFirst": 0,
+        "predictedPercent": null,
+        "observedHitRatePercent": null,
+        "intervalLowPercent": null,
+        "intervalHighPercent": null
+      },
+      {
+        "index": 4,
+        "lowPercent": 80,
+        "highPercent": 100,
+        "samples": 0,
+        "targetFirst": 0,
+        "predictedPercent": null,
+        "observedHitRatePercent": null,
+        "intervalLowPercent": null,
+        "intervalHighPercent": null
+      }
+    ],
+    "setupSamples": {
+      "Pullback": 251,
+      "Range watch": 671,
+      "Trend continuation": 461
+    },
+    "setupEvidence": {
+      "Pullback": {
+        "samples": 251,
+        "targetFirst": 73,
+        "predictedPercent": 22.12,
+        "observedHitRatePercent": 29.08
+      },
+      "Range watch": {
+        "samples": 671,
+        "targetFirst": 99,
+        "predictedPercent": 15.48,
+        "observedHitRatePercent": 14.75
+      },
+      "Trend continuation": {
+        "samples": 461,
+        "targetFirst": 143,
+        "predictedPercent": 25.46,
+        "observedHitRatePercent": 31.02
+      }
+    }
+  },
+  "dataset": {
+    "asOf": "2026-10-20",
+    "period": "10y",
+    "selectedSymbols": 180,
+    "usableHistories": 95,
+    "eventSymbols": 91,
+    "events": 5745,
+    "sha256": "220475caf9004bf6f8b83ce62b9d6977b228006a3ed000bd2ae60e485bd0b7c9",
+    "limitations": "Pilot based on today's Yahoo Canadian equity directory, not a historical constituent master. Delisted/missing listings and survivorship bias are not resolved. Technical price-only event estimates; no historical fundamentals, trading-cost profitability, intraday ordering certainty or future return guarantee. Reported stock splits restart the usable history; unexplained extreme price jumps are rejected.",
+    "selection": "Deterministic round robin by present-day exchange and sector, ordered by provider dollar-volume proxy within each group. Not a whole-market backtest."
+  }
+}

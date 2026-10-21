@@ -1,0 +1,343 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "target-before-stop-logit-v1",
+  "status": "Validated",
+  "reason": "Preset chronological validation gates passed; estimates remain conditional on the supplied universe and execution assumptions.",
+  "event": "Target touched before invalidation within 20 trading sessions after a qualifying entry.",
+  "trainedAt": "2026-10-21",
+  "gates": {
+    "trainingSamples": 500,
+    "calibrationSamples": 200,
+    "testSamples": 300,
+    "symbols": 40,
+    "testSymbols": 20,
+    "calibrationEachClass": 30,
+    "testEachClass": 50,
+    "maxCalibrationError": 0.1,
+    "maxBandCalibrationError": 0.15,
+    "maxSetupCalibrationError": 0.15,
+    "minDailyValue": 50000,
+    "setupTestSamples": 75,
+    "binTestSamples": 50,
+    "maxAgeDays": 120
+  },
+  "data": {
+    "inputEvents": 5745,
+    "acceptedEvents": 5745,
+    "rejectedEvents": 0,
+    "symbols": 91
+  },
+  "scope": "Price-only, conditional-on-fill model of supplied historical listings; current-listing data has survivorship and Yahoo corporate-action limitations. No fees, spreads or execution guarantee.",
+  "support": {
+    "trainingRanges": {
+      "rewardRisk": [
+        1.5,
+        10.816
+      ],
+      "targetAtr": [
+        1.8133338394094105,
+        10.96684734652716
+      ],
+      "stopAtr": [
+        0.700934579439253,
+        2.2883295194508
+      ],
+      "entryDistanceAtr": [
+        -0.358101546817739,
+        6.370126471815367
+      ],
+      "rsi14": [
+        15.1533,
+        89.9751
+      ],
+      "distanceSma50Atr": [
+        -5.79565711627153,
+        10.11759526532719
+      ],
+      "return20d": [
+        -25.4335,
+        76.0563
+      ],
+      "relativeVolume": [
+        0.0487,
+        14.391
+      ],
+      "logDollarVolume": [
+        4.7847017823649995,
+        8.91979732647717
+      ],
+      "setupPullback": [
+        0.0,
+        1.0
+      ],
+      "setupRangeWatch": [
+        0.0,
+        1.0
+      ],
+      "setupTrendContinuation": [
+        0.0,
+        1.0
+      ]
+    },
+    "excludedCalibration": 6,
+    "excludedTest": 19
+  },
+  "splits": {
+    "training": {
+      "samples": 3008,
+      "symbols": 53,
+      "start": "2017-08-08",
+      "end": "2023-04-26",
+      "outcomeEnd": "2023-05-26",
+      "targetFirst": 463
+    },
+    "calibration": {
+      "samples": 1189,
+      "symbols": 60,
+      "start": "2023-05-31",
+      "end": "2025-01-10",
+      "outcomeEnd": "2025-02-10",
+      "targetFirst": 218
+    },
+    "test": {
+      "samples": 1383,
+      "symbols": 89,
+      "start": "2025-02-11",
+      "end": "2026-09-18",
+      "outcomeEnd": "2026-10-20",
+      "targetFirst": 315
+    },
+    "purgedTraining": 88,
+    "purgedCalibration": 52
+  },
+  "validation": {
+    "testSamples": 1383,
+    "testSymbols": 89,
+    "testStart": "2025-02-11",
+    "testEnd": "2026-10-20",
+    "brier": 0.167106,
+    "baselineBrier": 0.177861,
+    "logLoss": 0.510237,
+    "baselineLogLoss": 0.542785,
+    "baselineRatePercent": 18.33,
+    "calibrationError": 0.029049,
+    "bins": [
+      {
+        "index": 0,
+        "lowPercent": 0,
+        "highPercent": 20,
+        "samples": 740,
+        "targetFirst": 103,
+        "predictedPercent": 14.05,
+        "observedHitRatePercent": 13.92,
+        "intervalLowPercent": 11.61,
+        "intervalHighPercent": 16.6
+      },
+      {
+        "index": 1,
+        "lowPercent": 20,
+        "highPercent": 40,
+        "samples": 635,
+        "targetFirst": 207,
+        "predictedPercent": 26.69,
+        "observedHitRatePercent": 32.6,
+        "intervalLowPercent": 29.07,
+        "intervalHighPercent": 36.34
+      },
+      {
+        "index": 2,
+        "lowPercent": 40,
+        "highPercent": 60,
+        "samples": 8,
+        "targetFirst": 5,
+        "predictedPercent": 41.44,
+        "observedHitRatePercent": 62.5,
+        "intervalLowPercent": 30.57,
+        "intervalHighPercent": 86.32
+      },
+      {
+        "index": 3,
+        "lowPercent": 60,
+        "highPercent": 80,
+        "samples": 0,
+        "targetFirst": 0,
+        "predictedPercent": null,
+        "observedHitRatePercent": null,
+        "intervalLowPercent": null,
+        "intervalHighPercent": null
+      },
+      {
+        "index": 4,
+        "lowPercent": 80,
+        "highPercent": 100,
+        "samples": 0,
+        "targetFirst": 0,
+        "predictedPercent": null,
+        "observedHitRatePercent": null,
+        "intervalLowPercent": null,
+        "intervalHighPercent": null
+      }
+    ],
+    "setupSamples": {
+      "Pullback": 251,
+      "Range watch": 671,
+      "Trend continuation": 461
+    },
+    "setupEvidence": {
+      "Pullback": {
+        "samples": 251,
+        "targetFirst": 73,
+        "predictedPercent": 22.12,
+        "observedHitRatePercent": 29.08
+      },
+      "Range watch": {
+        "samples": 671,
+        "targetFirst": 99,
+        "predictedPercent": 15.48,
+        "observedHitRatePercent": 14.75
+      },
+      "Trend continuation": {
+        "samples": 461,
+        "targetFirst": 143,
+        "predictedPercent": 25.46,
+        "observedHitRatePercent": 31.02
+      }
+    }
+  },
+  "model": {
+    "featureNames": [
+      "rewardRisk",
+      "targetAtr",
+      "stopAtr",
+      "entryDistanceAtr",
+      "rsi14",
+      "distanceSma50Atr",
+      "return20d",
+      "relativeVolume",
+      "logDollarVolume",
+      "setupPullback",
+      "setupRangeWatch",
+      "setupTrendContinuation"
+    ],
+    "imputation": [
+      3.4349999999999996,
+      3.622990323283623,
+      0.8034647505252105,
+      0.40085518896007455,
+      45.3361,
+      -0.4312251245094222,
+      -1.2048,
+      0.9908,
+      7.793424415282576,
+      0.0,
+      1.0,
+      0.0
+    ],
+    "means": [
+      3.5146379654255364,
+      3.910460338939185,
+      0.905120194610682,
+      0.6380754239977303,
+      48.21013796542539,
+      -0.04583957892370384,
+      -0.1543568151595747,
+      1.156410039893615,
+      7.692149561226424,
+      0.1971409574468085,
+      0.6742021276595744,
+      0.12865691489361702
+    ],
+    "scales": [
+      1.4820086255052372,
+      1.267487474946898,
+      0.19321274887623077,
+      0.8556151954332236,
+      13.863409669195114,
+      2.580885927781717,
+      7.712363842220315,
+      0.7686672506053513,
+      0.6458820841839202,
+      0.3978396666293695,
+      0.468672186841591,
+      0.3348198219097431
+    ],
+    "coefficients": [
+      -0.24485765553253147,
+      -0.26400897720862304,
+      -0.0023325835944077535,
+      -0.1180302001698931,
+      0.19343950942935603,
+      -0.03601643931339378,
+      0.07808228219952931,
+      -0.04407849801532962,
+      -0.06179490278234331,
+      0.07658458417390807,
+      -0.013695028063894598,
+      -0.0718293993108232
+    ],
+    "intercept": -1.8610326680323814,
+    "calibrationCoefficient": 0.7696762085775204,
+    "calibrationIntercept": -0.18068142954890135,
+    "trainingRanges": {
+      "rewardRisk": [
+        1.5,
+        10.816
+      ],
+      "targetAtr": [
+        1.8133338394094105,
+        10.96684734652716
+      ],
+      "stopAtr": [
+        0.700934579439253,
+        2.2883295194508
+      ],
+      "entryDistanceAtr": [
+        -0.358101546817739,
+        6.370126471815367
+      ],
+      "rsi14": [
+        15.1533,
+        89.9751
+      ],
+      "distanceSma50Atr": [
+        -5.79565711627153,
+        10.11759526532719
+      ],
+      "return20d": [
+        -25.4335,
+        76.0563
+      ],
+      "relativeVolume": [
+        0.0487,
+        14.391
+      ],
+      "logDollarVolume": [
+        4.7847017823649995,
+        8.91979732647717
+      ],
+      "setupPullback": [
+        0.0,
+        1.0
+      ],
+      "setupRangeWatch": [
+        0.0,
+        1.0
+      ],
+      "setupTrendContinuation": [
+        0.0,
+        1.0
+      ]
+    }
+  },
+  "dataset": {
+    "asOf": "2026-10-20",
+    "period": "10y",
+    "selectedSymbols": 180,
+    "usableHistories": 95,
+    "eventSymbols": 91,
+    "events": 5745,
+    "sha256": "220475caf9004bf6f8b83ce62b9d6977b228006a3ed000bd2ae60e485bd0b7c9",
+    "limitations": "Pilot based on today's Yahoo Canadian equity directory, not a historical constituent master. Delisted/missing listings and survivorship bias are not resolved. Technical price-only event estimates; no historical fundamentals, trading-cost profitability, intraday ordering certainty or future return guarantee. Reported stock splits restart the usable history; unexplained extreme price jumps are rejected.",
+    "selection": "Deterministic round robin by present-day exchange and sector, ordered by provider dollar-volume proxy within each group. Not a whole-market backtest."
+  }
+}

@@ -25,6 +25,31 @@ export type HistoricalEvidence = {
   asOf: string | null; method: string;
 };
 
+export type ProbabilityValidation = {
+  testSamples: number; testSymbols: number;
+  brier: number; baselineBrier: number; calibrationError: number;
+  testStart: string; testEnd: string;
+  setupSamples?: number; binSamples?: number; observedHitRatePercent?: number;
+};
+
+export type TradeProbability = {
+  value: number | null;
+  status: 'Estimated' | 'Insufficient evidence' | 'Not calibrated';
+  event: string; reason: string;
+  modelVersion?: string | null; asOf?: string | null;
+  validation?: ProbabilityValidation | null;
+};
+
+type ValidationSplit = { samples: number; symbols: number; start: string | null; end: string | null; outcomeEnd: string | null; targetFirst: number };
+export type ProbabilityReport = {
+  schemaVersion: 1; modelVersion: string;
+  status: 'Validated' | 'Insufficient evidence'; reason: string; trainedAt: string;
+  data: { inputEvents: number; acceptedEvents: number; symbols: number };
+  splits?: { training: ValidationSplit; calibration: ValidationSplit; test: ValidationSplit };
+  validation?: Pick<ProbabilityValidation, 'testSamples' | 'testSymbols' | 'brier' | 'baselineBrier' | 'calibrationError' | 'testStart' | 'testEnd'>;
+  dataset?: { period: string; eventSymbols: number; events: number; limitations: string | string[]; selection?: string };
+};
+
 export type TradePlan = {
   status: 'Ready' | 'Wait' | 'Unavailable'; asOf: string;
   horizonSessions: number; entryValidForSessions: number;
@@ -33,7 +58,7 @@ export type TradePlan = {
   upsidePercent: number | null; downsidePercent: number | null;
   rewardRisk: number | null;
   basis: string; explanation: string;
-  probability: { value: number | null; status: 'Not calibrated'; event: string; reason: string };
+  probability: TradeProbability;
   historical?: HistoricalEvidence;
 };
 
@@ -62,6 +87,67 @@ const validDate = (value: unknown): value is string => {
 };
 const TRADE_EVENT = 'Target touched before invalidation within 20 trading sessions after a qualifying entry.';
 
+function isProbabilityValidation(value: unknown): value is ProbabilityValidation {
+  return record(value) && count(value.testSamples) && count(value.testSymbols)
+    && finite(value.brier) && value.brier >= 0 && value.brier <= 1
+    && finite(value.baselineBrier) && value.baselineBrier >= 0 && value.baselineBrier <= 1
+    && finite(value.calibrationError) && value.calibrationError >= 0 && value.calibrationError <= 1
+    && validDate(value.testStart) && validDate(value.testEnd) && value.testStart <= value.testEnd
+    && (value.setupSamples === undefined || count(value.setupSamples))
+    && (value.binSamples === undefined || count(value.binSamples))
+    && (value.observedHitRatePercent === undefined || finite(value.observedHitRatePercent) && value.observedHitRatePercent >= 0 && value.observedHitRatePercent <= 100);
+}
+
+export function isTradeProbability(value: unknown): value is TradeProbability {
+  if (!record(value) || !['Estimated', 'Insufficient evidence', 'Not calibrated'].includes(String(value.status))
+    || value.event !== TRADE_EVENT || typeof value.reason !== 'string'
+    || value.modelVersion !== undefined && value.modelVersion !== null && (typeof value.modelVersion !== 'string' || !value.modelVersion.trim())
+    || value.asOf !== undefined && value.asOf !== null && !validDate(value.asOf)
+    || value.validation !== undefined && value.validation !== null && !isProbabilityValidation(value.validation)) return false;
+  if (value.status !== 'Estimated') return value.value === null;
+  return count(value.value) && value.value >= 1 && value.value <= 99
+    && typeof value.modelVersion === 'string' && !!value.modelVersion.trim()
+    && validDate(value.asOf) && isProbabilityValidation(value.validation)
+    && value.validation.testEnd <= value.asOf
+    && value.validation.testSamples >= 300 && value.validation.testSymbols >= 20
+    && value.validation.calibrationError <= .10 && value.validation.brier < value.validation.baselineBrier
+    && count(value.validation.setupSamples) && value.validation.setupSamples >= 75 && value.validation.setupSamples <= value.validation.testSamples
+    && count(value.validation.binSamples) && value.validation.binSamples >= 50 && value.validation.binSamples <= value.validation.testSamples
+    && finite(value.validation.observedHitRatePercent) && value.validation.observedHitRatePercent >= 0 && value.validation.observedHitRatePercent <= 100;
+}
+
+export function isProbabilityReport(value: unknown): value is ProbabilityReport {
+  if (!record(value) || value.schemaVersion !== 1 || typeof value.modelVersion !== 'string' || !value.modelVersion.trim()
+    || !['Validated', 'Insufficient evidence'].includes(String(value.status)) || typeof value.reason !== 'string'
+    || !validDate(value.trainedAt) || !record(value.data)
+    || !['inputEvents', 'acceptedEvents', 'symbols'].every(key => count((value.data as Record<string, unknown>)[key]))
+    || Number(value.data.acceptedEvents) > Number(value.data.inputEvents)) return false;
+  if (value.splits !== undefined) {
+    if (!record(value.splits)) return false;
+    for (const name of ['training', 'calibration', 'test']) {
+      const split = value.splits[name];
+      if (!record(split) || !['samples', 'symbols', 'targetFirst'].every(key => count(split[key]))
+        || Number(split.targetFirst) > Number(split.samples)
+        || !['start', 'end', 'outcomeEnd'].every(key => split[key] === null || validDate(split[key]))) return false;
+    }
+  }
+  if (value.validation !== undefined) {
+    if (!record(value.validation)) return false;
+    const { setupSamples: _setupSamples, binSamples: _binSamples, observedHitRatePercent: _observedRate, ...base } = value.validation;
+    if (!isProbabilityValidation(base) || base.testEnd > value.trainedAt) return false;
+  }
+  if (value.dataset !== undefined && (!record(value.dataset) || typeof value.dataset.period !== 'string'
+    || !count(value.dataset.eventSymbols) || !count(value.dataset.events) || !(typeof value.dataset.limitations === 'string' || strings(value.dataset.limitations))
+    || value.dataset.selection !== undefined && typeof value.dataset.selection !== 'string')) return false;
+  if (value.status === 'Validated') {
+    if (!record(value.validation)) return false;
+    const validation = value.validation;
+    return Number(validation.testSamples) >= 300 && Number(validation.testSymbols) >= 20
+      && Number(validation.calibrationError) <= .10 && Number(validation.brier) < Number(validation.baselineBrier);
+  }
+  return true;
+}
+
 function isHistoricalEvidence(value: unknown): value is HistoricalEvidence {
   if (!record(value)) return false;
   if (!['samples', 'targetFirst', 'stopFirst', 'expired', 'unfilled', 'ambiguous'].every(key => count(value[key]))
@@ -84,10 +170,16 @@ export function isTradePlan(value: unknown): value is TradePlan {
   if (!['Ready', 'Wait', 'Unavailable'].includes(String(value.status)) || !validDate(value.asOf)
     || value.horizonSessions !== 20 || value.entryValidForSessions !== 5
     || !numberFields.every(key => nullableNumber(value[key])) || typeof value.basis !== 'string' || typeof value.explanation !== 'string'
-    || value.probability.status !== 'Not calibrated' || value.probability.value !== null
-    || value.probability.event !== TRADE_EVENT || typeof value.probability.reason !== 'string'
+    || !isTradeProbability(value.probability)
     || value.historical !== undefined && !isHistoricalEvidence(value.historical)) return false;
-  if (value.status === 'Unavailable') return numberFields.every(key => value[key] === null);
+  if (value.status === 'Unavailable') return value.probability.status !== 'Estimated' && numberFields.every(key => value[key] === null);
+  if (value.probability.status === 'Estimated') {
+    const signalDay = new Date(`${value.asOf}T00:00:00.000Z`).valueOf();
+    const modelDay = new Date(`${value.probability.asOf}T00:00:00.000Z`).valueOf();
+    const testEnd = value.probability.validation!.testEnd;
+    const testDay = new Date(`${testEnd}T00:00:00.000Z`).valueOf();
+    if (testEnd > value.asOf || Math.abs(signalDay - modelDay) / 86400000 > 120 || (signalDay - testDay) / 86400000 > 120) return false;
+  }
   if (!numberFields.every(key => finite(value[key]))) return false;
   const priceFields = ['entryLow', 'entryHigh', 'referenceEntry', 'target', 'invalidation'];
   if (!priceFields.every(key => Math.abs(Number(value[key]) * 100 - Math.round(Number(value[key]) * 100)) <= 0.000001)) return false;

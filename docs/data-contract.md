@@ -58,13 +58,25 @@ type TradePlan = {
   upsidePercent: number | null; downsidePercent: number | null;
   rewardRisk: number | null;
   basis: string; explanation: string;
-  probability: { value: number | null; status: 'Not calibrated'; event: string; reason: string };
+  probability: {
+    value: number | null; status: 'Estimated' | 'Insufficient evidence' | 'Not calibrated';
+    event: string; reason: string; modelVersion?: string; asOf?: string;
+    validation?: {
+      testSamples: number; testSymbols: number; brier: number; baselineBrier: number;
+      calibrationError: number; testStart: string; testEnd: string;
+      setupSamples: number; binSamples: number; observedHitRatePercent: number;
+    };
+  };
   historical?: HistoricalEvidence;
 };
 ```
 
 Default plan window: 20 trading sessions after a qualifying entry, with the proposed entry valid for five sessions following `asOf`. Opening gaps at or below invalidation cancel a proposed entry. Target and invalidation are conditional scenarios, not guaranteed fills or exit prices. Returns use the stated reference entry before fees/slippage; `downsidePercent` is negative. `rewardRisk` is calculated at the upper edge of the entry range (the least favourable entry), rather than advertising a favourable midpoint ratio.
 
-Prices are rounded before calculations. Ready or Wait plans satisfy `0 < invalidation < entryLow <= referenceEntry <= entryHigh < target`. A missing or broken setup yields Unavailable with null price/return fields. Probability remains null until out-of-sample calibration validates the explicitly named event: target touched before invalidation within 20 sessions after entry. A screening score or retrospective hit rate must never be substituted for that probability.
+Prices are rounded before calculations. Ready or Wait plans satisfy `0 < invalidation < entryLow <= referenceEntry <= entryHigh < target`. A missing or broken setup yields Unavailable with null price/return fields. Probability is an integer percentage from 1 to 99 only when `status` is Estimated, independent model validation and individual setup/band support gates pass, and the snapshot is live. Otherwise `value` is null. The event is target touched before invalidation within 20 sessions after a qualifying entry; the estimate is conditional on the entry filling. A screening score or retrospective hit rate must never be substituted for that probability.
+
+Estimated results require at least 300 supported untouched-test observations across 20 symbols, 75 observations for the setup, 50 in the probability band, Brier error below the fixed calibration-prevalence baseline, and global calibration error at most 0.10. Local setup/band mean errors must be at most 0.15. Model and latest test outcomes must be within 120 calendar days of the signal, and no test outcome may occur after that signal. These are preset research gates, not a certification of future performance.
+
+`data/probability-validation.json` is an optional aggregate report. It contains version/date, status/reason, accepted dataset counts, purged training/calibration/test summaries, independent test metrics and scope limitations. It contains no raw price histories or training rows. Demo companies never receive real-model percentages, even when the Methodology page displays this real historical validation report.
 
 Historical evidence, when available, is a same-symbol, price-only, chronological diagnostic using prior signals and completed future windows. Its target-first frequency is labelled historical, not a calibrated forecast. Unfilled entries are separate from filled outcomes; ambiguous daily bars use conservative ordering and are counted. Synthetic demo data never supplies real-world probabilities or historical hit-rate claims.

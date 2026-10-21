@@ -112,7 +112,25 @@ Potential returns are price changes from the stated reference entry before fees 
 
 The historical diagnostic rebuilds earlier signals using only information available on each signal day, models conditional reference-entry limit fills for five sessions while skipping opening gaps at or below invalidation, separates unfilled entries, and counts target-first, stop-first and expired filled outcomes. It requires a complete post-entry 20-session window and uses conservative daily-bar ordering for ambiguous cases. Observations do not overlap. This is retrospective price-only evidence from the provider's available history, with missing/delisted-universe limitations; it is not a calibrated forecast. A same-symbol historical hit rate can be calculated after at least 20 filled observations, with a Wilson interval, but the dashboard currently shows supporting counts rather than presenting that frequency as a future probability.
 
-The forecast probability field remains null/Not calibrated until a separate chronological training, calibration and untouched test process validates the named target-before-invalidation event. An AI-generated confidence number and a screening score cannot substitute for that validation. Demo data never produces real historical probability claims.
+The separate probability model learns from price-only events across a sampled Canadian universe. It fits on older dates, calibrates on later dates and measures performance on an untouched newest period, purging outcome windows across the boundaries. Only supported live setups receive an integer probability; unsupported conditions show Insufficient evidence. Demo companies never receive model percentages. The Methodology page displays aggregate real validation evidence separately.
+
+The probability is conditional on the model's reference-entry buy-limit fill, skipping an opening gap at or below invalidation, and measures target-before-invalidation within the stated 20-session window. It does not apply to every possible fill across the entry zone; a different entry needs a new estimate. It is not an estimate of net profitability. Fees, spreads, execution, correlated stocks, changing market conditions, missing/delisted listings and present-day universe selection limit what historical validation can establish. The model may withhold estimates after 120 days without fresh evidence. A screening score and an AI-generated confidence number cannot substitute for validation.
+
+## Train the probability model locally
+
+```sh
+python -m scanner.train_probability --max-symbols 180 --period 10y
+```
+
+This collects an explicitly sampled training cohort, preserves raw history/events only in ignored `.cache/probability/`, and writes `models/probability.json` plus the aggregate `public/data/probability-validation.json`. It does not call OpenAI, enable a schedule or change the scan universe. Failed validation saves the failure evidence and withholds probabilities; no parameter search on the test period is performed. The normal live scanner automatically uses the checked-in model.
+
+To reuse an already collected cohort without downloading again:
+
+```sh
+python -m scanner.train_probability --train-only
+```
+
+Training uses at least C$50,000 historical average daily traded value, restarts history after a reported split, and excludes unverified extreme price jumps. This is a present-day Yahoo constituent pilot, with survivorship and provider-data limitations, rather than a historical whole-market benchmark. Refresh the local dataset periodically and review the independent report before publishing a replacement artifact. Running the initial training on your Mac adds no server or AI expense.
 
 Method references: [probability calibration](https://scikit-learn.org/stable/modules/calibration.html), [CIRO guidance on stop-loss orders](https://www.ciro.ca/newsroom/publications/guidance-respecting-management-stop-loss-orders-0).
 
