@@ -49,6 +49,10 @@ On screens up to 760 pixels, results use stock cards with prices, scores, entry/
 
 Charts use [TradingView Lightweight Charts](https://tradingview.github.io/lightweight-charts/) with its attribution and license notices included. No chart subscription or new backend is required.
 
+## Display wording
+
+The dashboard uses plain labels such as Suggested buy range, Target sell price, Sell if it falls to, Possible gain and Chance of reaching target. `src/labels.ts` translates filter values and `src/plainEnglish.ts` translates saved research notes for display. The underlying data fields, numerical calculations, event definitions and model rules retain their original contracts. The chance still means the target is reached before the lower exit price within 20 trading days after a qualifying buy, using the buy price shown.
+
 ## Optional AI
 
 The scanner produces rules-based summaries without a key. For optional AI curation, set `OPENAI_API_KEY` in the scanner's environment and explicitly pass `--ai`. In this first pass, the model selects and orders the supplied evidence and risks; the displayed sentences come from that evidence, rather than free-form company claims. `OPENAI_MODEL` defaults to `gpt-6.1-sol`; `--max-ai 10` limits company analyses. Do not put a secret in a command argument, a `VITE_` environment variable, committed JSON, or browser code.

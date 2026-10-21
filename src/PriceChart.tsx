@@ -8,6 +8,8 @@ import type { Opportunity } from './types';
 
 type Props = { history: Opportunity['history']; currency?: string; compact?: boolean; label?: string };
 type CustomRange = { from: string; to: string };
+const intervalLabels: Record<ChartInterval, string> = { daily: '1 day', weekly: '1 week', monthly: '1 month' };
+const rangeLabels: Record<ChartRange, string> = { '1M': '1 month', '3M': '3 months', '6M': '6 months', YTD: 'This year', '1Y': '1 year', '2Y': '2 years', All: 'All available' };
 
 function timeKey(time: Time): string {
   if (typeof time === 'string') return time;
@@ -37,7 +39,7 @@ function CompactChart({ history, label }: Pick<Props, 'history' | 'label'>) {
   const y = (price: number) => 3 + (high - price) / (high - low) * 34;
   const path = points.map((point, index) => `${index ? 'L' : 'M'}${x(index).toFixed(2)},${y(point.close).toFixed(2)}`).join(' ');
   const color = points[points.length - 1].close >= points[0].close ? '#287661' : '#bc6254';
-  return <div className="sparkline"><svg viewBox="0 0 128 40" role="img" aria-label={`${label}, ${date(points[0].date)} to ${date(points[points.length - 1].date)}, ${points.length} daily observations`}><path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></div>;
+  return <div className="sparkline"><svg viewBox="0 0 128 40" role="img" aria-label={`${label}, ${date(points[0].date)} to ${date(points[points.length - 1].date)}, ${points.length} trading days`}><path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></div>;
 }
 
 function DetailChart({ history, currency = 'CAD', label = 'Daily closing price' }: Props) {
@@ -98,7 +100,7 @@ function DetailChart({ history, currency = 'CAD', label = 'Daily closing price' 
       chartRef.current = chart;
       applyRange(chart, bars, selectionRef.current.range, selectionRef.current.custom);
       setReady(true);
-    }).catch(() => { if (!cancelled) setChartError('The interactive chart could not load. Saved date and price values remain visible.'); });
+    }).catch(() => { if (!cancelled) setChartError('The chart could not load. Available dates and prices remain visible.'); });
     return () => { cancelled = true; chartRef.current = null; chart?.remove(); };
   }, [bars, chartKind, currency]);
 
@@ -106,7 +108,7 @@ function DetailChart({ history, currency = 'CAD', label = 'Daily closing price' 
     if (ready && chartRef.current) applyRange(chartRef.current, bars, activeRange, custom);
   }, [ready, bars, activeRange, custom]);
 
-  if (source.length < 2) return <div className="chart-empty">Daily history is not available for this security.</div>;
+  if (source.length < 2) return <div className="chart-empty">Daily price history is not available for this stock.</div>;
   const first = source[0].date;
   const last = source[source.length - 1].date;
   const readout = hovered || bars[bars.length - 1];
@@ -131,25 +133,25 @@ function DetailChart({ history, currency = 'CAD', label = 'Daily closing price' 
   const applyCustom = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const next = { from: from || first, to: to || last };
-    if (!isChartDate(next.from) || !isChartDate(next.to) || next.from > next.to || next.from < first || next.to > last) { setFeedback('Choose dates within the saved history, with the start before the end.'); return; }
-    if (visibleBars(bars, activeRange, next).length < 2) { setFeedback('Choose a range containing at least two bars at the selected interval.'); return; }
-    setCustom(next); setFeedback('Custom date range applied.');
+    if (!isChartDate(next.from) || !isChartDate(next.to) || next.from > next.to || next.from < first || next.to > last) { setFeedback('Choose dates within the available history, with the start date before the end date.'); return; }
+    if (visibleBars(bars, activeRange, next).length < 2) { setFeedback('Choose dates containing at least two price points with the selected grouping.'); return; }
+    setCustom(next); setFeedback('Your date range is now shown.');
   };
 
   return <section className="detail-price-chart" aria-label={`${label}, interactive history`}>
     <div className="chart-toolbar">
-      <div className="chart-view-toggle" aria-label="Chart style"><button type="button" aria-pressed={chartKind === 'line'} onClick={() => setKind('line')}>Line</button><button type="button" aria-pressed={chartKind === 'candles'} disabled={!candleAvailable} title={!candleAvailable ? 'Complete saved OHLC data is required for candles.' : undefined} onClick={() => setKind('candles')}>Candles</button></div>
-      <label className="chart-interval-control">Interval<select value={activeInterval} onChange={event => { setInterval(event.target.value as ChartInterval); setCustom(null); setFeedback(''); }}>{availableIntervals.map(item => <option key={item} value={item}>{item[0].toUpperCase() + item.slice(1)}</option>)}</select></label>
-      <div className="chart-tools"><button type="button" disabled={!ready} aria-label="Pan to earlier dates" title="Earlier dates" onClick={() => pan(-1)}><ChevronLeft size={18} /></button><button type="button" disabled={!ready} aria-label="Pan to later dates" title="Later dates" onClick={() => pan(1)}><ChevronRight size={18} /></button><button type="button" disabled={!ready} aria-label="Zoom in" title="Zoom in" onClick={() => zoom(.7)}><ZoomIn size={18} /></button><button type="button" disabled={!ready} aria-label="Zoom out" title="Zoom out" onClick={() => zoom(1 / .7)}><ZoomOut size={18} /></button><button type="button" disabled={!ready} onClick={reset}><RotateCcw size={16} /><span>Reset</span></button></div>
+      <div className="chart-view-toggle" aria-label="Chart type"><button type="button" aria-pressed={chartKind === 'line'} onClick={() => setKind('line')}>Line</button><button type="button" aria-pressed={chartKind === 'candles'} disabled={!candleAvailable} title={!candleAvailable ? 'Candles need the opening, highest, lowest and closing prices.' : undefined} onClick={() => setKind('candles')}>Candles</button></div>
+      <label className="chart-interval-control">Group prices by<select value={activeInterval} onChange={event => { setInterval(event.target.value as ChartInterval); setCustom(null); setFeedback(''); }}>{availableIntervals.map(item => <option key={item} value={item}>{intervalLabels[item]}</option>)}</select></label>
+      <div className="chart-tools"><button type="button" disabled={!ready} aria-label="Move to earlier dates" title="Earlier dates" onClick={() => pan(-1)}><ChevronLeft size={18} /></button><button type="button" disabled={!ready} aria-label="Move to later dates" title="Later dates" onClick={() => pan(1)}><ChevronRight size={18} /></button><button type="button" disabled={!ready} aria-label="Zoom in" title="Zoom in" onClick={() => zoom(.7)}><ZoomIn size={18} /></button><button type="button" disabled={!ready} aria-label="Zoom out" title="Zoom out" onClick={() => zoom(1 / .7)}><ZoomOut size={18} /></button><button type="button" disabled={!ready} onClick={reset}><RotateCcw size={16} /><span>Reset</span></button></div>
     </div>
-    <div className="chart-range-controls" aria-label="Saved history range">{availableRanges.map(preset => <button type="button" key={preset} aria-pressed={!custom && activeRange === preset} onClick={() => selectRange(preset)}>{preset}</button>)}</div>
-    <details className="chart-date-controls"><summary>Custom dates</summary><form className="chart-date-fields" onSubmit={applyCustom}><label>From<input type="date" min={first} max={last} value={from || first} onChange={event => setFrom(event.target.value)} required /></label><label>To<input type="date" min={first} max={last} value={to || last} onChange={event => setTo(event.target.value)} required /></label><button type="submit">Apply dates</button></form></details>
-    <div className="chart-readout"><strong>{date(readout.date, true)}</strong>{isNumber(readout.open) && <><span>O <b>{money(readout.open, currency)}</b></span><span>H <b>{money(readout.high, currency)}</b></span><span>L <b>{money(readout.low, currency)}</b></span></>}<span>C <b>{money(readout.close, currency)}</b></span><span>Volume <b>{number(readout.volume)}</b></span></div>
-    <div ref={hostRef} className="interactive-chart-canvas" style={{ minHeight: 300 }} role="img" aria-label={`${chartKind === 'candles' ? 'Candlestick' : 'Closing price'} chart in ${currency}, ${activeInterval} bars. Drag horizontally to pan; use zoom buttons or pinch to zoom.`} />
+    <div className="chart-range-controls" aria-label="Available price history">{availableRanges.map(preset => <button type="button" key={preset} aria-pressed={!custom && activeRange === preset} onClick={() => selectRange(preset)}>{rangeLabels[preset]}</button>)}</div>
+    <details className="chart-date-controls"><summary>Choose your own dates</summary><form className="chart-date-fields" onSubmit={applyCustom}><label>From<input type="date" min={first} max={last} value={from || first} onChange={event => setFrom(event.target.value)} required /></label><label>To<input type="date" min={first} max={last} value={to || last} onChange={event => setTo(event.target.value)} required /></label><button type="submit">Show these dates</button></form></details>
+    <div className="chart-readout"><strong>{date(readout.date, true)}</strong>{isNumber(readout.open) && <><span>Open <b>{money(readout.open, currency)}</b></span><span>High <b>{money(readout.high, currency)}</b></span><span>Low <b>{money(readout.low, currency)}</b></span></>}<span>Close <b>{money(readout.close, currency)}</b></span><span>Shares traded <b>{number(readout.volume)}</b></span></div>
+    <div ref={hostRef} className="interactive-chart-canvas" style={{ minHeight: 300 }} role="img" aria-label={`${chartKind === 'candles' ? 'Candlestick' : 'Closing price'} chart in ${currency}, prices grouped by ${intervalLabels[activeInterval]}. Drag left or right to move through dates; use zoom buttons or pinch to zoom.`} />
     {chartError && <p className="chart-feedback" role="alert">{chartError}</p>}
     {feedback && <p className="chart-feedback" role="status">{feedback}</p>}
-    {!candleAvailable && <p className="chart-history-note">Candlesticks unavailable: this saved history does not contain complete daily OHLC data.</p>}
-    <p className="chart-history-note">Daily data · {date(first, true)} – {date(last, true)} · {number(source.length)} saved sessions. No intraday data. {activeInterval !== 'daily' && 'Bars aggregate saved daily observations; the latest period may be incomplete.'}</p>
+    {!candleAvailable && <p className="chart-history-note">Candles are unavailable because the history is missing some opening, highest or lowest prices.</p>}
+    <p className="chart-history-note">Daily prices · {date(first, true)} – {date(last, true)} · {number(source.length)} trading days. Minute and hour prices are not available. {activeInterval !== 'daily' && `Prices combine the available daily data; the first and latest ${activeInterval === 'weekly' ? 'week' : 'month'} may be incomplete.`}</p>
     <p className="chart-attribution"><a href="https://www.tradingview.com/" target="_blank" rel="noreferrer">TradingView Lightweight Charts™</a><span> · © 2025 TradingView, Inc. · </span><a href={`${import.meta.env.BASE_URL}licenses/lightweight-charts-NOTICE.txt`} target="_blank" rel="noreferrer">Notice</a><span> · </span><a href={`${import.meta.env.BASE_URL}licenses/lightweight-charts-LICENSE.txt`} target="_blank" rel="noreferrer">License</a></p>
   </section>;
 }
