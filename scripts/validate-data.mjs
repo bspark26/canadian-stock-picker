@@ -4,6 +4,8 @@ import { pathToFileURL } from 'node:url';
 const fail = (message) => { throw new Error(message); };
 const isNumber = (value) => typeof value === 'number' && Number.isFinite(value);
 const validDate = (value) => typeof value === 'string' && Number.isFinite(Date.parse(value));
+const validDay = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+  && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
 const strings = (value) => Array.isArray(value) && value.every((item) => typeof item === 'string');
 
 function validateProbability(probability, plan, item, mode) {
@@ -125,7 +127,12 @@ export function validateSnapshot(data, { expectLive = false } = {}) {
     if (!Array.isArray(item.history) || item.history.length < 2) fail(`${item.symbol}: insufficient chart history.`);
     let prior = '';
     for (const bar of item.history) {
-      if (!validDate(bar.date) || bar.date <= prior || !isNumber(bar.close) || bar.close <= 0 || !isNumber(bar.volume) || bar.volume < 0) fail(`${item.symbol}: invalid chart history.`);
+      if (!validDay(bar.date) || bar.date <= prior || !isNumber(bar.close) || bar.close <= 0 || !isNumber(bar.volume) || bar.volume < 0) fail(`${item.symbol}: invalid chart history.`);
+      const candleFields = ['open', 'high', 'low'];
+      if (candleFields.some(key => bar[key] !== undefined)
+        && (!candleFields.every(key => isNumber(bar[key]) && bar[key] > 0)
+          || bar.high < Math.max(bar.open, bar.close, bar.low)
+          || bar.low > Math.min(bar.open, bar.close, bar.high))) fail(`${item.symbol}: invalid chart OHLC range.`);
       prior = bar.date;
     }
     if (!Array.isArray(item.sources) || item.sources.length === 0) fail(`${item.symbol}: missing sources.`);

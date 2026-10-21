@@ -1,3 +1,5 @@
+export type ChartBar = { date: string; close: number; volume: number; open?: number; high?: number; low?: number };
+
 export type Opportunity = {
   symbol: string; name: string; exchange: string; sector: string;
   price: number; changePercent: number | null; currency: string;
@@ -9,7 +11,7 @@ export type Opportunity = {
   summary: string; reasons: string[]; risks: string[];
   technicals: { rsi14: number | null; sma20: number | null; sma50: number | null; sma200: number | null; support: number | null; resistance: number | null; atr14: number | null; relativeVolume: number | null; return20d: number | null };
   fundamentals: { cash: number | null; debt: number | null; revenueGrowth: number | null; freeCashFlow: number | null; operatingCashFlow: number | null; cashRunwayMonths: number | null; profitMargin: number | null; priceToSales: number | null };
-  history: { date: string; close: number; volume: number }[];
+  history: ChartBar[];
   sources: { label: string; url: string; asOf: string | null }[];
   priceAsOf: string; fundamentalsAsOf: string | null;
   dataQuality: 'Complete' | 'Partial'; analysisKind: 'Rules' | 'AI';
@@ -86,6 +88,16 @@ const validDate = (value: unknown): value is string => {
   return Number.isFinite(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
 };
 const TRADE_EVENT = 'Target touched before invalidation within 20 trading sessions after a qualifying entry.';
+
+export function isChartBar(value: unknown): value is ChartBar {
+  if (!record(value) || !validDate(value.date) || !finite(value.close) || value.close <= 0
+    || !finite(value.volume) || value.volume < 0) return false;
+  const fields = ['open', 'high', 'low'];
+  if (fields.every(key => value[key] === undefined)) return true;
+  if (!fields.every(key => finite(value[key]) && Number(value[key]) > 0)) return false;
+  return Number(value.high) >= Math.max(Number(value.open), value.close, Number(value.low))
+    && Number(value.low) <= Math.min(Number(value.open), value.close, Number(value.high));
+}
 
 function isProbabilityValidation(value: unknown): value is ProbabilityValidation {
   return record(value) && count(value.testSamples) && count(value.testSymbols)
@@ -219,7 +231,8 @@ function isOpportunity(value: unknown): value is Opportunity {
     && (value.tradePlan === undefined || isTradePlan(value.tradePlan))
     && (!record(value.tradePlan) || !record(value.tradePlan.probability) || value.tradePlan.probability.status !== 'Estimated'
       || finite(value.technicals.sma200) && value.technicals.sma200 > 0)
-    && Array.isArray(value.history) && value.history.every(point => record(point) && typeof point.date === 'string' && finite(point.close) && finite(point.volume))
+    && Array.isArray(value.history) && value.history.length >= 2
+    && value.history.every((point, index, bars) => isChartBar(point) && (index === 0 || bars[index - 1].date < point.date))
     && Array.isArray(value.sources) && value.sources.every(source => record(source) && typeof source.label === 'string' && typeof source.url === 'string' && nullableString(source.asOf));
 }
 

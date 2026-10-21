@@ -74,7 +74,7 @@ def opportunity(symbol, snapshot, frame, currency, payload):
         "marketCap": number(info.get("marketCap") or snapshot.get("marketCap")), "averageDailyValue": round(daily_value, 2) if daily_value is not None else None,
         "fundamentalScore": fundamental_score, "technicalScore": score, "setup": setup, "horizon": horizon,
         "summary": " ".join(reasons[:2]), "reasons": reasons, "risks": list(dict.fromkeys(risks)), "technicals": technicals, "fundamentals": metrics,
-        "history": [{"date": index.date().isoformat(), "close": round(float(row["Close"]), 6), "volume": int(row["Volume"])} for index, row in frame.tail(260).iterrows()],
+        "history": [{"date": index.date().isoformat(), **{key.lower(): round(float(row[key]), 6) for key in ("Open", "High", "Low", "Close")}, "volume": int(row["Volume"])} for index, row in frame.tail(520).iterrows()],
         "sources": [
             {"label": "Yahoo Finance daily history", "url": f"https://finance.yahoo.com/quote/{quote(symbol)}/history/", "asOf": price_as_of},
             {"label": "Yahoo Finance annual income statement", "url": f"https://finance.yahoo.com/quote/{quote(symbol)}/financials/", "asOf": payload.get("income", {}).get("asOf")},

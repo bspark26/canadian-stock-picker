@@ -41,6 +41,14 @@ To regenerate the illustrative demo intentionally:
 python -m scanner.run --demo --output public/data/latest.json
 ```
 
+## Charts and mobile
+
+Open a stock for an interactive line or candlestick chart with price/date scales, crosshair values, pan/zoom, preset ranges and custom dates. Daily, weekly and monthly views use the published daily bars; intraday quotes are not included. Available history varies by listing and is shown in the chart. Weekly/monthly candles aggregate actual daily open, high, low, close and volume; partial calendar periods reflect only saved completed sessions.
+
+On screens up to 760 pixels, results use stock cards with prices, scores, entry/target/stop and supported probabilities. The desktop keeps the sortable table. Both layouts use the same filters and data.
+
+Charts use [TradingView Lightweight Charts](https://tradingview.github.io/lightweight-charts/) with its attribution and license notices included. No chart subscription or new backend is required.
+
 ## Optional AI
 
 The scanner produces rules-based summaries without a key. For optional AI curation, set `OPENAI_API_KEY` in the scanner's environment and explicitly pass `--ai`. In this first pass, the model selects and orders the supplied evidence and risks; the displayed sentences come from that evidence, rather than free-form company claims. `OPENAI_MODEL` defaults to `gpt-6.1-sol`; `--max-ai 10` limits company analyses. Do not put a secret in a command argument, a `VITE_` environment variable, committed JSON, or browser code.

@@ -3,8 +3,8 @@
 ## Passed locally
 
 - Production TypeScript + Vite build.
-- 140 Python regressions, including causal probability events, historical collection/split handling, time-separated calibration, purging, training-only preprocessing, individual inference support, verified OHLCV and history warmup, corrupted-artifact refusal, entry/return arithmetic and the existing scanner/AI checks.
-- 26 Node checks covering probability UI guards, options payoffs and snapshot publication safeguards, including fabricated/demo probability rejection, temporal bounds, history warmup and historical outcome accounting.
+- 141 Python regressions, including causal probability events, historical collection/split handling, time-separated calibration, purging, training-only preprocessing, individual inference support, verified OHLCV and history warmup, corrupted-artifact refusal, entry/return arithmetic and the existing scanner/AI checks.
+- 39 Node checks covering probability UI guards, options payoffs and snapshot publication safeguards, including fabricated/demo probability rejection, temporal bounds, history warmup and historical outcome accounting.
 - Static snapshot validation of the six-company synthetic demo, a three-symbol live smoke scan and the broad live shortlist.
 - Firefox desktop checks: overview, navigation, symbol search, research detail panel, source/currency/date labels, strategy selection and edited contract counts.
 - Firefox 412-pixel responsive viewport: compact navigation, live stock search/detail, entry and probability cards, full-width filters and Options calculator. Chart tick labels remain readable at 14 CSS pixels. This is browser simulation, not a physical-phone test.
@@ -47,3 +47,11 @@ The 0–20% and 20–40% probability bands have 740 and 635 test outcomes respec
 A local three-symbol integration scan passed both publication and UI contracts: LSPD received an estimated target-hit probability, RY received an estimate, and NEXG withheld one because there was no qualifying technical plan. The probability specifically applies to the model's reference-entry limit fill, including its gap-skip rule, rather than any price in the displayed entry zone. The real aggregate report appears in Methodology independently of demo-company data.
 
 The final published shortlist passes both server publication checks and frontend runtime guards. All 100 saved price histories pass OHLCV validation; 75 setups receive a supported model estimate and 25 withhold one. These counts reflect the dated snapshot and will change after a refresh. The probability integration safeguards have 13 additional regressions covering invalid/mismatched histories, published-price boundaries and pre-ranking exclusion.
+
+## Chart and mobile update
+
+The same dated live scan now publishes verified daily OHLCV history for all 100 stocks: 69–502 sessions per listing, with no new market-data request or AI call. The scanner retains up to 520 bars on later refreshes. Publication and frontend guards reject partial OHLC, impossible ranges, invalid dates, duplicate days and nonfinite prices/volume while accepting legacy close-only data.
+
+Desktop Firefox checks passed for BMM: readable currency price/date axes, line/candlestick switching, All history, weekly aggregation, and a custom 2025-10-21 through 2026-10-20 range that changed the visible candles. In the 412-pixel responsive viewport, the wide results table is replaced by cards; BMM and SHOP cards, search, open details, SHOP line/candles and 1M controls were checked visually. Price and date scales remained readable within the phone width. Native date segments require keyboard entry in the automation tool; normal date inputs remain browser controls. Physical-phone touch gestures remain untested.
+
+Nine chart-data test groups cover aggregation, calendar boundaries, missing OHLC/volume, source-date-relative ranges, short histories and non-trading-day tolerance. Four additional publication/UI history groups and one scanner export regression cover the new candle data contract. The chart library is loaded on opening stock detail and includes its attribution/license notices. The final preset filter also excludes ranges containing fewer than two bars at the selected interval.

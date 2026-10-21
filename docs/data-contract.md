@@ -13,7 +13,7 @@ type Opportunity = {
   summary: string; reasons: string[]; risks: string[];
   technicals: { rsi14: number | null; sma20: number | null; sma50: number | null; sma200: number | null; support: number | null; resistance: number | null; atr14: number | null; relativeVolume: number | null; return20d: number | null };
   fundamentals: { cash: number | null; debt: number | null; revenueGrowth: number | null; freeCashFlow: number | null; operatingCashFlow: number | null; cashRunwayMonths: number | null; profitMargin: number | null; priceToSales: number | null };
-  history: { date: string; close: number; volume: number }[];
+  history: { date: string; close: number; volume: number; open?: number; high?: number; low?: number }[];
   sources: { label: string; url: string; asOf: string | null }[];
   priceAsOf: string; fundamentalsAsOf: string | null;
   dataQuality: 'Complete' | 'Partial';
@@ -32,7 +32,7 @@ type Scan = {
 };
 ```
 
-`revenueGrowth`, `profitMargin`, and `return20d` use percent units (10 means 10%). History is daily end-of-day close, never represented as live prices. Support and resistance are descriptive historical ranges, not a promised floor, target, or forecast. Scores use 0–100 and only available metrics; insufficient evidence returns null. Distinguish pre-revenue resource developers from operating companies; lack of revenue alone is not a solvency verdict. AI only synthesizes supplied evidence and cannot invent management/project facts. Options availability is unknown unless checked; no contract recommendations without current quotes.
+`revenueGrowth`, `profitMargin`, and `return20d` use percent units (10 means 10%). History contains completed daily OHLCV bars, never live prices. The scanner publishes up to 520 saved daily bars (the default request covers two years). Older close-only snapshots remain readable; candle views require verified open/high/low values, and none are inferred from closes. If any OHLC field is present, all three are required, positive and consistent with the high/low range. Dates must be real, unique and increasing. Support and resistance are descriptive historical ranges, not a promised floor, target, or forecast. Scores use 0–100 and only available metrics; insufficient evidence returns null. Distinguish pre-revenue resource developers from operating companies; lack of revenue alone is not a solvency verdict. AI only synthesizes supplied evidence and cannot invent management/project facts. Options availability is unknown unless checked; no contract recommendations without current quotes.
 
 Demo fixtures are conspicuously labelled illustrative, not current market data. A failed scan must not overwrite the last successful data with fabricated output or a fresh timestamp. Show skipped/failed counts and incomplete exchange coverage honestly.
 
