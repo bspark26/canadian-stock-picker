@@ -1,0 +1,18 @@
+{
+  "min_price": 1.0,
+  "min_average_daily_value": 0,
+  "exclude_cdrs": true,
+  "history_period": "2y",
+  "history_cache_hours": 18,
+  "fundamentals_cache_days": 7,
+  "universe_cache_hours": 18,
+  "request_pause_seconds": 0.25,
+  "page_size": 250,
+  "max_pages_per_exchange": 100,
+  "output_limit": 100,
+  "ai_max_companies": 10,
+  "ai_max_output_tokens": 1000,
+  "ai_max_spend_usd": 0.5,
+  "ai_input_usd_per_million": 2.0,
+  "ai_output_usd_per_million": 10.0
+}

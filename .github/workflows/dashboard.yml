@@ -1,0 +1,141 @@
+name: Scan, check and publish dashboard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      refresh:
+        description: Fetch a fresh Yahoo scan before deploying
+        type: boolean
+        default: false
+      use_ai:
+        description: Analyze the shortlist with the configured OpenAI secret
+        type: boolean
+        default: false
+  schedule:
+    # After Canadian markets close, year round. GitHub schedules may be delayed.
+    - cron: '17 23 * * 1-5'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maple-signal-${{ github.event_name == 'pull_request' && github.ref || 'pages' }}
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: >-
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+      ((github.event_name == 'schedule' && vars.ENABLE_SCHEDULED_SCAN == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.refresh))
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - uses: actions/cache@v6
+        with:
+          path: .cache/scanner
+          key: scanner-v1-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: scanner-v1-${{ runner.os }}-
+      - run: python -m pip install -r requirements.txt
+      - name: Scan market into a temporary snapshot
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-6.1-sol' }}
+          AI_MAX_COMPANIES: '10'
+          REQUEST_AI: ${{ (github.event_name == 'schedule' && vars.ENABLE_SCHEDULED_AI == 'true') || (github.event_name == 'workflow_dispatch' && inputs.use_ai) }}
+        run: |
+          mkdir -p .tmp
+          scan_args=(--output .tmp/latest.json)
+          if [[ "$REQUEST_AI" == 'true' ]]; then
+            scan_args+=(--ai --max-ai 10)
+          fi
+          python -m scanner.run "${scan_args[@]}"
+          node scripts/validate-data.mjs .tmp/latest.json --expect-live
+          mv .tmp/latest.json public/data/latest.json
+      - name: Save validated snapshot
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/data/latest.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Refresh market recommendations'
+            git push origin HEAD
+          fi
+
+  check-and-build:
+    needs: refresh
+    if: >-
+      always() && !cancelled() &&
+      (needs.refresh.result == 'success' || needs.refresh.result == 'skipped') &&
+      (github.event_name != 'schedule' || vars.ENABLE_SCHEDULED_SCAN == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Refresh commits use GITHUB_TOKEN, which does not trigger a new workflow.
+          # Build that commit here rather than relying on another push event.
+          ref: ${{ github.event_name == 'pull_request' && github.ref || github.event.repository.default_branch }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: npm ci
+      - run: python -m pip install -r requirements.txt
+      - run: python -m pytest tests
+      - run: node --experimental-strip-types --test tests/options.test.mjs
+      - run: node scripts/validate-data.mjs public/data/latest.json
+      - name: Build dashboard for the Pages subdirectory
+        env:
+          REPOSITORY_NAME: ${{ github.event.repository.name }}
+        run: |
+          if [[ "$REPOSITORY_NAME" == *.github.io ]]; then
+            export VITE_BASE_PATH=/
+          else
+            export VITE_BASE_PATH="/$REPOSITORY_NAME/"
+          fi
+          npm run build
+          touch dist/.nojekyll
+      - uses: actions/upload-pages-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          path: dist
+
+  deploy:
+    if: >-
+      github.event_name != 'pull_request' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: check-and-build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - name: Publish GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
