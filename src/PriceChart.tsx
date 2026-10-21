@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
-import type { IChartApi, Time } from 'lightweight-charts';
+import type { IChartApi, ISeriesApi, Time } from 'lightweight-charts';
 import { date, isNumber, money, number } from './format';
 import { aggregateHistory, availableChartRanges, hasCompleteOHLC, isChartDate, sanitizeHistory, selectChartRange } from './chartData';
 import type { ChartBar, ChartInterval, ChartRange } from './chartData';
 import type { Opportunity } from './types';
+import { MOVING_AVERAGE_PERIODS, movingAverageSeries } from './movingAverages';
+import type { MovingAveragePeriod } from './movingAverages';
 
 type Props = { history: Opportunity['history']; currency?: string; compact?: boolean; label?: string };
 type CustomRange = { from: string; to: string };
 const intervalLabels: Record<ChartInterval, string> = { daily: '1 day', weekly: '1 week', monthly: '1 month' };
 const rangeLabels: Record<ChartRange, string> = { '1M': '1 month', '3M': '3 months', '6M': '6 months', YTD: 'This year', '1Y': '1 year', '2Y': '2 years', All: 'All available' };
+const averageColours: Record<MovingAveragePeriod, string> = { 20: '#2869b4', 50: '#a8650a', 200: '#8951aa' };
 
 function timeKey(time: Time): string {
   if (typeof time === 'string') return time;
@@ -51,6 +54,13 @@ function DetailChart({ history, currency = 'CAD', label = 'Daily closing price' 
   const activeInterval = availableIntervals.includes(interval) ? interval : 'daily';
   const [kind, setKind] = useState<'line' | 'candles'>('line');
   const bars = useMemo(() => aggregateHistory(source, activeInterval), [source, activeInterval]);
+  const averages = useMemo(() => MOVING_AVERAGE_PERIODS.map(period => ({
+    period, points: movingAverageSeries(source, period, activeInterval),
+  })), [source, activeInterval]);
+  const averageValues = useMemo(() => new Map(averages.map(({ period, points }) => [period, new Map(points.map(point => [point.date, point.value]))])), [averages]);
+  const [enabledAverages, setEnabledAverages] = useState<Set<MovingAveragePeriod>>(() => new Set(MOVING_AVERAGE_PERIODS));
+  const averageVisibility = useRef(enabledAverages);
+  averageVisibility.current = enabledAverages;
   const availableRanges = useMemo(() => coveredRanges.filter(preset => selectChartRange(bars, preset).length >= 2), [coveredRanges, bars]);
   const activeRange = availableRanges.includes(range) ? range : 'All';
   const candleAvailable = bars.length >= 2 && hasCompleteOHLC(bars);
@@ -64,6 +74,7 @@ function DetailChart({ history, currency = 'CAD', label = 'Daily closing price' 
   const [ready, setReady] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const averageSeriesRef = useRef(new Map<MovingAveragePeriod, ISeriesApi<'Line'>>());
   const selectionRef = useRef({ range: activeRange, custom });
   selectionRef.current = { range: activeRange, custom };
 
@@ -73,7 +84,7 @@ function DetailChart({ history, currency = 'CAD', label = 'Daily closing price' 
     let cancelled = false;
     let chart: IChartApi | null = null;
     setReady(false); setChartError(''); setHovered(null);
-    void import('lightweight-charts').then(({ createChart, CandlestickSeries, LineSeries, ColorType, CrosshairMode }) => {
+    void import('lightweight-charts').then(({ createChart, CandlestickSeries, LineSeries, ColorType, CrosshairMode, LineStyle }) => {
       if (cancelled) return;
       chart = createChart(host, {
         autoSize: true,
@@ -95,14 +106,32 @@ function DetailChart({ history, currency = 'CAD', label = 'Daily closing price' 
         const series = chart.addSeries(LineSeries, { color: '#287661', lineWidth: 2, priceLineVisible: true, lastValueVisible: true, crosshairMarkerVisible: true });
         series.setData(bars.map(bar => ({ time: bar.date, value: bar.close })));
       }
+      for (const { period, points } of averages) {
+        const series = chart.addSeries(LineSeries, {
+          color: averageColours[period], lineWidth: 2,
+          lineStyle: period === 200 ? LineStyle.Dashed : LineStyle.Solid,
+          priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
+          pointMarkersVisible: points.length === 1,
+          visible: points.length > 0 && averageVisibility.current.has(period),
+        });
+        series.setData(points.map(point => ({ time: point.date, value: point.value })));
+        averageSeriesRef.current.set(period, series);
+      }
       const byDate = new Map(bars.map(bar => [bar.date, bar]));
       chart.subscribeCrosshairMove(param => setHovered(param.time && param.point ? byDate.get(timeKey(param.time)) || null : null));
       chartRef.current = chart;
       applyRange(chart, bars, selectionRef.current.range, selectionRef.current.custom);
       setReady(true);
     }).catch(() => { if (!cancelled) setChartError('The chart could not load. Available dates and prices remain visible.'); });
-    return () => { cancelled = true; chartRef.current = null; chart?.remove(); };
-  }, [bars, chartKind, currency]);
+    return () => { cancelled = true; chartRef.current = null; averageSeriesRef.current.clear(); chart?.remove(); };
+  }, [bars, chartKind, currency, averages]);
+
+  useEffect(() => {
+    if (!ready) return;
+    for (const { period, points } of averages) {
+      averageSeriesRef.current.get(period)?.applyOptions({ visible: points.length > 0 && enabledAverages.has(period) });
+    }
+  }, [enabledAverages, ready, averages]);
 
   useEffect(() => {
     if (ready && chartRef.current) applyRange(chartRef.current, bars, activeRange, custom);
@@ -112,6 +141,11 @@ function DetailChart({ history, currency = 'CAD', label = 'Daily closing price' 
   const first = source[0].date;
   const last = source[source.length - 1].date;
   const readout = hovered || bars[bars.length - 1];
+  const toggleAverage = (period: MovingAveragePeriod) => setEnabledAverages(previous => {
+    const next = new Set(previous);
+    if (next.has(period)) next.delete(period); else next.add(period);
+    return next;
+  });
   const selectRange = (next: ChartRange) => { setRange(next); setCustom(null); setFeedback(''); if (chartRef.current) applyRange(chartRef.current, bars, next, null); };
   const reset = () => selectRange(availableRanges.includes('3M') ? '3M' : 'All');
   const zoom = (factor: number) => {
@@ -147,6 +181,15 @@ function DetailChart({ history, currency = 'CAD', label = 'Daily closing price' 
     <div className="chart-range-controls" aria-label="Available price history">{availableRanges.map(preset => <button type="button" key={preset} aria-pressed={!custom && activeRange === preset} onClick={() => selectRange(preset)}>{rangeLabels[preset]}</button>)}</div>
     <details className="chart-date-controls"><summary>Choose your own dates</summary><form className="chart-date-fields" onSubmit={applyCustom}><label>From<input type="date" min={first} max={last} value={from || first} onChange={event => setFrom(event.target.value)} required /></label><label>To<input type="date" min={first} max={last} value={to || last} onChange={event => setTo(event.target.value)} required /></label><button type="submit">Show these dates</button></form></details>
     <div className="chart-readout"><strong>{date(readout.date, true)}</strong>{isNumber(readout.open) && <><span>Open <b>{money(readout.open, currency)}</b></span><span>High <b>{money(readout.high, currency)}</b></span><span>Low <b>{money(readout.low, currency)}</b></span></>}<span>Close <b>{money(readout.close, currency)}</b></span><span>Shares traded <b>{number(readout.volume)}</b></span></div>
+    <fieldset className="chart-averages"><legend>Moving averages</legend><div className="chart-average-options">{averages.map(({ period, points }) => {
+      const available = points.length > 0;
+      const enabled = available && enabledAverages.has(period);
+      return <label key={period} className={!available ? 'unavailable' : undefined} title={available ? `Average of the last ${period} daily closing prices` : `Needs ${period} saved trading days`}>
+        <input type="checkbox" checked={enabled} disabled={!available} onChange={() => toggleAverage(period)} aria-label={`${period}-day moving average`} />
+        <span className={`chart-average-swatch ${period === 200 ? 'dashed' : ''}`} style={{ borderColor: averageColours[period] }} aria-hidden="true" />
+        <span>{period}-day</span><strong>{!available ? 'Not enough history' : !enabled ? 'Off' : money(averageValues.get(period)?.get(readout.date), currency)}</strong>
+      </label>;
+    })}</div><p>Uses daily closing prices, including in week and month views. Values follow the date above; a dash means the average is not available yet.</p></fieldset>
     <div ref={hostRef} className="interactive-chart-canvas" style={{ minHeight: 300 }} role="img" aria-label={`${chartKind === 'candles' ? 'Candlestick' : 'Closing price'} chart in ${currency}, prices grouped by ${intervalLabels[activeInterval]}. Drag left or right to move through dates; use zoom buttons or pinch to zoom.`} />
     {chartError && <p className="chart-feedback" role="alert">{chartError}</p>}
     {feedback && <p className="chart-feedback" role="status">{feedback}</p>}
