@@ -149,7 +149,8 @@ class YahooSource:
         return frame, currency
 
     def fundamentals(self, symbol: str):
-        cached = self.cache.get("fundamentals", f"v2-{symbol}", self.settings["fundamentals_cache_days"] * 24)
+        # v3 includes instrument/exchange metadata needed by arbitrary lookups.
+        cached = self.cache.get("fundamentals", f"v3-{symbol}", self.settings["fundamentals_cache_days"] * 24)
         if cached:
             return cached
         self.pause()
@@ -172,12 +173,12 @@ class YahooSource:
                 output[name] = next((number(frame.loc[candidate, column]) for candidate in candidates if candidate in frame.index and number(frame.loc[candidate, column]) is not None), None)
             return output
         result = {
-            "info": {key: info.get(key) for key in ("longName", "shortName", "sector", "industry", "financialCurrency", "currency", "marketCap", "revenueGrowth", "profitMargins", "priceToSalesTrailing12Months")},
+            "info": {key: info.get(key) for key in ("longName", "shortName", "sector", "industry", "financialCurrency", "currency", "marketCap", "revenueGrowth", "profitMargins", "priceToSalesTrailing12Months", "exchange", "fullExchangeName", "market", "quoteType")},
             "balance": statement(balance, {"cash": ["CashCashEquivalentsAndShortTermInvestments", "CashAndCashEquivalents"], "debt": ["TotalDebt"]}),
             "cashflow": statement(flow, {"operatingCashFlow": ["OperatingCashFlow"], "freeCashFlow": ["FreeCashFlow"]}, "12M"),
             "income": statement(income, {"revenue": ["TotalRevenue"]}, "12M"),
         }
         if not info and not result["balance"] and not result["cashflow"]:
             raise SourceError(f"No fundamental evidence for {symbol}")
-        self.cache.put("fundamentals", f"v2-{symbol}", result)
+        self.cache.put("fundamentals", f"v3-{symbol}", result)
         return result

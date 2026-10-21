@@ -73,7 +73,7 @@ export type Scan = {
   warnings: string[]; opportunities: Opportunity[];
 };
 
-export type View = 'overview' | 'opportunities' | 'options' | 'methodology';
+export type View = 'overview' | 'opportunities' | 'analyze' | 'options' | 'methodology';
 
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
@@ -212,7 +212,7 @@ export function isTradePlan(value: unknown): value is TradePlan {
     && Math.abs(Number(value.rewardRisk) - rewardRisk) <= 0.0011;
 }
 
-function isOpportunity(value: unknown): value is Opportunity {
+export function isOpportunity(value: unknown): value is Opportunity {
   if (!record(value) || !record(value.technicals) || !record(value.fundamentals)) return false;
   const textFields = ['symbol', 'name', 'exchange', 'sector', 'currency', 'summary', 'priceAsOf'];
   const numberFields = ['changePercent', 'marketCap', 'averageDailyValue', 'fundamentalScore', 'technicalScore'];

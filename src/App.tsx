@@ -7,12 +7,14 @@ import { date, isNumber, money, number, percent, timestamp } from './format';
 import PriceChart from './PriceChart';
 import TradePlan, { EntryScenarioCell, UpsideScenarioCell } from './TradePlan';
 import OptionsLab from './OptionsLab';
+import StockAnalyzer from './StockAnalyzer';
 import ProbabilityEvidence from './ProbabilityEvidence';
 import { pricePatternLabel, timeframeLabel } from './labels';
 import { plainEnglish } from './plainEnglish';
 
 const navigation: { id: View; label: string; icon: LucideIcon }[] = [
   { id: 'overview', label: 'Stocks', icon: BarChart3 },
+  { id: 'analyze', label: 'Analyze', icon: Search },
   { id: 'options', label: 'Options', icon: FlaskConical },
   { id: 'methodology', label: 'How it works', icon: BookOpen },
 ];
@@ -193,7 +195,7 @@ export default function App() {
     <main className="functional-main">
       {scan?.mode === 'demo' && <div className="demo-banner compact-notice"><FlaskConical size={17} /><span><strong>Demo data</strong> · Example companies and prices.</span></div>}
       {error && <div className="notice error" role="alert"><AlertTriangle size={20} /><div><strong>Could not reload data.</strong><p>{error}{scan ? ' The previous report remains visible.' : ''}</p></div><button className="button secondary" onClick={() => setReload(value => value + 1)} disabled={loading}>Retry</button></div>}
-      {view === 'options' ? <OptionsLab /> : view === 'methodology' ? <Methodology scan={scan} probabilityReport={probabilityReport} /> : <>
+      {view === 'analyze' ? <StockAnalyzer apiUrl={import.meta.env.VITE_ANALYSIS_API_URL || ''} onOpen={setSelected} /> : view === 'options' ? <OptionsLab /> : view === 'methodology' ? <Methodology scan={scan} probabilityReport={probabilityReport} /> : <>
         <div className="scan-heading"><div><h1>Stocks</h1><p>{scan?.marketAsOf ? `Prices as of ${date(scan.marketAsOf, true)}` : 'No stock data loaded'}{scan && <> · Updated {timestamp(scan.generatedAt)}</>}{marketAge > 4 && <> · Data is {number(marketAge)} days old</>}</p></div><button className="button secondary" onClick={() => setReload(value => value + 1)} disabled={loading}><RefreshCw size={15} className={loading ? 'spinning' : ''} />{loading ? 'Loading' : 'Reload data'}</button></div>
         {scan && <div className="scan-facts"><span><strong>{number(scan.universe.scanned)}</strong> / {number(scan.universe.discovered)} checked</span><span><strong>{number(scan.universe.eligible)}</strong> passed the filters</span><span>Minimum <strong>{money(scan.filters.minPrice)}</strong></span><span>{scan.universe.complete ? 'All listings confirmed' : 'Some listings may be missing'}</span><span><strong>{number(scan.universe.failed)}</strong> could not be checked</span></div>}
         {scan && (scan.status !== 'complete' || !scan.universe.complete || scan.warnings.length > 0) && <details className="scan-details compact-scan-details"><summary>{scan.status === 'failed' ? 'Stock search failed' : 'Data notes'}{scan.warnings.length > 0 && <> ({number(scan.warnings.length)})</>}</summary>{!scan.universe.complete && <p>The app has not confirmed that every Canadian listing is included.</p>}<ul>{scan.warnings.map((warning, index) => <li key={index}>{plainEnglish(warning)}</li>)}</ul></details>}
@@ -204,5 +206,5 @@ export default function App() {
         </section>
       </>}
     </main>
-  </div>{selected && <OpportunityDetail stock={selected} demo={scan?.mode === 'demo'} close={closeDetail} />}</>;
+  </div>{selected && <OpportunityDetail stock={selected} demo={view !== 'analyze' && scan?.mode === 'demo'} close={closeDetail} />}</>;
 }

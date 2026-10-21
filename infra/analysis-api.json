@@ -1,0 +1,76 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Maple Signal personal on-demand research API. No VPC, database server or paid AI.",
+  "Parameters": {
+    "CodeBucket": {"Type": "String"},
+    "CodeKey": {"Type": "String"},
+    "Release": {"Type": "String"},
+    "AllowedOrigin": {"Type": "String", "Default": "https://bspark26.github.io"},
+    "DailyLimit": {"Type": "Number", "Default": 30, "MinValue": 1, "MaxValue": 100},
+    "ReserveConcurrency": {"Type": "String", "Default": "true", "AllowedValues": ["true", "false"]}
+  },
+  "Conditions": {"CanReserveConcurrency": {"Fn::Equals": [{"Ref": "ReserveConcurrency"}, "true"]}},
+  "Resources": {
+    "Cache": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "BillingMode": "PAY_PER_REQUEST",
+        "AttributeDefinitions": [{"AttributeName": "pk", "AttributeType": "S"}],
+        "KeySchema": [{"AttributeName": "pk", "KeyType": "HASH"}],
+        "TimeToLiveSpecification": {"AttributeName": "expires", "Enabled": true},
+        "Tags": [{"Key": "Project", "Value": "MapleSignal"}]
+      }
+    },
+    "Role": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]},
+        "Policies": [{"PolicyName": "AnalysisCacheAndLogs", "PolicyDocument": {
+          "Version": "2012-10-17", "Statement": [
+            {"Effect": "Allow", "Action": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem"], "Resource": {"Fn::GetAtt": ["Cache", "Arn"]}},
+            {"Effect": "Allow", "Action": ["logs:CreateLogStream", "logs:PutLogEvents"], "Resource": {"Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}:*"}}
+          ]
+        }}]
+      }
+    },
+    "LogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {"LogGroupName": {"Fn::Sub": "/aws/lambda/${AWS::StackName}"}, "RetentionInDays": 7}
+    },
+    "Function": {
+      "Type": "AWS::Lambda::Function",
+      "DependsOn": "LogGroup",
+      "Properties": {
+        "FunctionName": {"Ref": "AWS::StackName"},
+        "Description": "Cached personal stock analysis; no AI or trading permissions",
+        "Runtime": "python3.12", "Architectures": ["x86_64"], "Handler": "api.handler.lambda_handler",
+        "MemorySize": 1024, "Timeout": 120,
+        "ReservedConcurrentExecutions": {"Fn::If": ["CanReserveConcurrency", 2, {"Ref": "AWS::NoValue"}]},
+        "Role": {"Fn::GetAtt": ["Role", "Arn"]},
+        "Code": {"S3Bucket": {"Ref": "CodeBucket"}, "S3Key": {"Ref": "CodeKey"}},
+        "Environment": {"Variables": {
+          "CACHE_TABLE": {"Ref": "Cache"}, "CACHE_RELEASE": {"Ref": "Release"},
+          "DAILY_ANALYSIS_LIMIT": {"Ref": "DailyLimit"}, "ALLOWED_ORIGIN": {"Ref": "AllowedOrigin"},
+          "XDG_CACHE_HOME": "/tmp/yfinance"
+        }},
+        "Tags": [{"Key": "Project", "Value": "MapleSignal"}]
+      }
+    },
+    "Url": {
+      "Type": "AWS::Lambda::Url",
+      "Properties": {"AuthType": "NONE", "TargetFunctionArn": {"Ref": "Function"}, "InvokeMode": "BUFFERED"}
+    },
+    "UrlPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {"FunctionName": {"Ref": "Function"}, "Principal": "*", "Action": "lambda:InvokeFunctionUrl", "FunctionUrlAuthType": "NONE"}
+    },
+    "InvokePermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {"FunctionName": {"Ref": "Function"}, "Principal": "*", "Action": "lambda:InvokeFunction", "InvokedViaFunctionUrl": true}
+    }
+  },
+  "Outputs": {
+    "AnalysisApiUrl": {"Value": {"Fn::Join": ["", [{"Fn::GetAtt": ["Url", "FunctionUrl"]}, "analyze"]]}},
+    "FunctionName": {"Value": {"Ref": "Function"}}
+  }
+}

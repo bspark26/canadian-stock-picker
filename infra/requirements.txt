@@ -1,0 +1,7 @@
+# Inference only. Training and pytest are deliberately omitted from Lambda.
+yfinance>=1.2,<2
+pandas>=2.2,<3
+numpy>=1.26,<3
+requests>=2.32,<3
+# Keep the SDK and its shared urllib3 dependency consistent in the bundle.
+boto3>=1.42,<2

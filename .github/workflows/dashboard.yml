@@ -109,6 +109,7 @@ jobs:
       - name: Build dashboard for the Pages subdirectory
         env:
           REPOSITORY_NAME: ${{ github.event.repository.name }}
+          VITE_ANALYSIS_API_URL: ${{ vars.ANALYSIS_API_URL }}
         run: |
           if [[ "$REPOSITORY_NAME" == *.github.io ]]; then
             export VITE_BASE_PATH=/

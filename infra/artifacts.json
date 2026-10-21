@@ -1,0 +1,18 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Private deployment artifacts for Maple Signal",
+  "Resources": {
+    "Artifacts": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketEncryption": {"ServerSideEncryptionConfiguration": [{"ServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]},
+        "PublicAccessBlockConfiguration": {"BlockPublicAcls": true, "BlockPublicPolicy": true, "IgnorePublicAcls": true, "RestrictPublicBuckets": true},
+        "LifecycleConfiguration": {"Rules": [{"Id": "ExpireBuilds", "Status": "Enabled", "ExpirationInDays": 30}]},
+        "Tags": [{"Key": "Project", "Value": "MapleSignal"}]
+      },
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain"
+    }
+  },
+  "Outputs": {"BucketName": {"Value": {"Ref": "Artifacts"}}}
+}

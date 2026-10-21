@@ -1,6 +1,6 @@
 # Maple Signal
 
-A personal Canadian stock research dashboard with fundamental and technical screens, saved recommendations, and an educational options calculator. React + TypeScript on GitHub Pages; Python scans in GitHub Actions. No brokerage connection, sign-in, or portfolio tracking.
+A personal Canadian stock research dashboard with fundamental and technical screens, individual-symbol analysis, saved recommendations, and an educational options calculator. React + TypeScript on GitHub Pages; Python scans in GitHub Actions and an optional Lambda lookup API. No brokerage connection, sign-in, or portfolio tracking.
 
 The published snapshot is a live Yahoo scan with completed daily prices through **2026-10-20**. It shows the top 100 candidates from 1,069 eligible CAD listings priced at least C$1. Coverage is partial; missing and failed histories remain recorded in the report.
 
@@ -13,7 +13,7 @@ npm ci
 npm run dev
 ```
 
-Open the Local URL printed by Vite. The saved dashboard works without Python, an API key or a paid service; Python is only needed to refresh data or retrain the model.
+Open the Local URL printed by Vite. The saved dashboard works without Python, an API key or a paid service; Python is needed to refresh data, retrain the model or run the local stock-lookup API.
 
 To use the scanner:
 
@@ -52,6 +52,10 @@ Charts use [TradingView Lightweight Charts](https://tradingview.github.io/lightw
 ## Display wording
 
 The dashboard uses plain labels such as Suggested buy range, Target sell price, Sell if it falls to, Possible gain and Chance of reaching target. `src/labels.ts` translates filter values and `src/plainEnglish.ts` translates saved research notes for display. The underlying data fields, numerical calculations, event definitions and model rules retain their original contracts. The chance still means the target is reached before the lower exit price within 20 trading days after a qualifying buy, using the buy price shown.
+
+## Analyze an individual stock
+
+The Analyze tab checks an exact Yahoo stock symbol outside the saved shortlist, with company finances, price indicators, a short-term trade plan and a 6–12 month financial outlook. The longer view does not invent a price target or confidence percentage. This uses a separate cached backend with no paid AI calls; see [setup and personal AWS deployment](docs/stock-analysis.md). It can be run locally while the personal AWS account is being connected.
 
 ## Optional AI
 

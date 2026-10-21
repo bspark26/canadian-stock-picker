@@ -26,11 +26,12 @@ def settings_from(path):
     return settings
 
 
-def opportunity(symbol, snapshot, frame, currency, payload):
+def opportunity(symbol, snapshot, frame, currency, payload, today=None):
+    today = today or date.today()
     price = float(frame["Close"].iloc[-1])
     technicals = indicators(frame)
     score = technical_score(price, technicals, len(frame))
-    metrics, fundamental_score, reasons, risks, financial_date, financial_currency = evaluate(payload)
+    metrics, fundamental_score, reasons, risks, financial_date, financial_currency = evaluate(payload, today=today)
     info = payload.get("info", {})
     price_as_of = frame.index[-1].date().isoformat()
     daily_value = number((frame["Close"] * frame["Volume"]).tail(20).mean()) if len(frame) >= 20 else None
@@ -44,7 +45,7 @@ def opportunity(symbol, snapshot, frame, currency, payload):
         reasons.append("Limited available evidence: inspect the linked price history and issuer disclosures.")
     if daily_value is None or daily_value < 50000:
         risks.append("Thin or unverified liquidity: quoted prices may not be executable without material spreads or slippage.")
-    age = (date.today() - frame.index[-1].date()).days
+    age = (today - frame.index[-1].date()).days
     if age > 7:
         risks.append(f"The latest available daily bar is {age} days old.")
     if len(frame) < 200:
