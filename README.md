@@ -52,6 +52,8 @@ node scripts/validate-data.mjs .tmp/latest.json --expect-live
 
 Python does not automatically load `.env`. Set variables in your shell or use your normal secret manager. `.env.example` documents the names without real credentials. In GitHub, add the key under **Settings → Secrets and variables → Actions → Secrets**. A dashboard refresh only reads saved results and does not call the API.
 
+After saving the secret, run **Actions → Check AI connection → Run workflow**. This manual-only check attempts one uncached generation using synthetic evidence and reports whether the exact model and structured response worked. It does not scan Yahoo, publish data, or enable scheduled jobs. The check reserves an estimated maximum of US$0.05 using the configured token rates and never retries a potentially billed generation automatically.
+
 ## Publish on GitHub Pages
 
 1. Create a **public** GitHub repository and push this project to its `main` branch. Free Pages uses a public publishing repository. If your CLI login has expired, run `gh auth login -h github.com` first.

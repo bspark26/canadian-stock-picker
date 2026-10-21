@@ -8,6 +8,45 @@ import os
 import requests
 
 
+def http_failure(error):
+    """Return fixed diagnostics, never server messages or exception/request text."""
+    response = error.response
+    status = response.status_code if response is not None and type(response.status_code) is int else None
+    code, kind = None, None
+    if response is not None:
+        try:
+            body = response.json()
+            detail = body.get("error") if isinstance(body, dict) else None
+            if isinstance(detail, dict):
+                code, kind = detail.get("code"), detail.get("type")
+        except (ValueError, requests.RequestException):
+            pass
+    allowed = {
+        "invalid_api_key", "insufficient_quota", "credit_balance_exhausted",
+        "organization_spend_limit_exceeded", "project_spend_limit_exceeded",
+        "organization_usage_limit_exceeded", "rate_limit_exceeded", "slow_down",
+        "model_not_found", "permission_denied", "invalid_request_error", "invalid_json_schema",
+    }
+    code = code if isinstance(code, str) and code in allowed else None
+    label = f"HTTP {status}" if status is not None else "HTTP request failed"
+    if code:
+        label += f" ({code})"
+    if status == 401:
+        action = "Authentication failed; check the saved API key, project and endpoint permissions."
+    elif status == 403:
+        action = "Access denied; check key permissions, project model access and permitted region."
+    elif status == 404:
+        action = "Model or endpoint unavailable; check the configured model and project access."
+    elif status == 429:
+        billing = {"insufficient_quota", "credit_balance_exhausted", "organization_spend_limit_exceeded", "project_spend_limit_exceeded", "organization_usage_limit_exceeded"}
+        action = "Billing or quota limit; check API credits and project/organization limits before another attempt." if code in billing or kind == "insufficient_quota" else "Rate limit reached; wait before another manual attempt."
+    elif status == 400:
+        action = "Request rejected; check model parameters and structured-output schema."
+    else:
+        action = "API request failed; check service status before another manual attempt."
+    return f"{label}. {action}"
+
+
 def curate(opportunities, settings, cache, maximum):
     model = os.environ.get("OPENAI_MODEL", "gpt-6.1-sol")
     key = os.environ.get("OPENAI_API_KEY")
@@ -42,15 +81,30 @@ def curate(opportunities, settings, cache, maximum):
                 # Never retry a potentially billed generation automatically.
                 response.raise_for_status()
                 body = response.json()
-                if body.get("status") != "completed":
+                if not isinstance(body, dict) or body.get("status") != "completed":
                     raise ValueError("Incomplete model response")
-                content = "".join(part.get("text", "") for item in body.get("output", []) for part in item.get("content", []) if part.get("type") == "output_text")
+                output = body.get("output")
+                if not isinstance(output, list) or any(not isinstance(item, dict) or not isinstance(item.get("content", []), list) for item in output):
+                    raise ValueError("Malformed model output")
+                parts = [part for item in output for part in item.get("content", [])]
+                if any(not isinstance(part, dict) for part in parts):
+                    raise ValueError("Malformed model content")
+                content = "".join(part.get("text", "") for part in parts if part.get("type") == "output_text")
                 result = json.loads(content)
                 for key_name, source in (("reasonIndexes", opportunity["reasons"]), ("riskIndexes", opportunity["risks"])):
                     indices = result[key_name]
                     if not 1 <= len(indices) <= 3 or any(type(index) is not int or not 0 <= index < len(source) for index in indices):
                         raise ValueError("Invalid evidence indices")
                 cache.put("ai", digest, result)
+            except requests.HTTPError as error:
+                warnings.append(f"AI curation failed for {opportunity['symbol']}: {http_failure(error)} Rules analysis retained.")
+                continue
+            except requests.Timeout:
+                warnings.append(f"AI curation timed out for {opportunity['symbol']}; the attempt may still be billed. No automatic retry; rules analysis retained.")
+                continue
+            except requests.ConnectionError:
+                warnings.append(f"AI connection failed for {opportunity['symbol']}; no automatic retry; rules analysis retained.")
+                continue
             except (requests.RequestException, ValueError, KeyError, TypeError):
                 warnings.append(f"AI curation failed for {opportunity['symbol']}; rules analysis retained.")
                 continue
