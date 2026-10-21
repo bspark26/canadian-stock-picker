@@ -2,7 +2,7 @@
 
 A personal Canadian stock research dashboard with fundamental and technical screens, saved recommendations, and an educational options calculator. React + TypeScript on GitHub Pages; Python scans in GitHub Actions. No brokerage connection, sign-in, or portfolio tracking.
 
-The bundled snapshot is **illustrative demo data**. The dashboard labels it clearly. A successful live scan is required before using the output as current research.
+The published snapshot is a live Yahoo scan with completed daily prices through **2026-10-20**. It shows the top 100 candidates from 1,069 eligible CAD listings priced at least C$1. Coverage is partial; missing and failed histories remain recorded in the report.
 
 ## Run locally
 
@@ -13,7 +13,7 @@ npm ci
 npm run dev
 ```
 
-Open the Local URL printed by Vite. The included demo works without Python, an API key or any paid service.
+Open the Local URL printed by Vite. The saved dashboard works without Python, an API key or a paid service; Python is only needed to refresh data or retrain the model.
 
 To use the scanner:
 
@@ -58,10 +58,10 @@ After saving the secret, run **Actions → Check AI connection → Run workflow*
 
 1. Create a **public** GitHub repository and push this project to its `main` branch. Free Pages uses a public publishing repository. If your CLI login has expired, run `gh auth login -h github.com` first.
 2. In the repository, open **Settings → Pages → Build and deployment → Source**, and choose **GitHub Actions**.
-3. Open **Actions → Scan, check and publish dashboard → Run workflow**. Leave `refresh` and `use_ai` off to publish the demo first.
+3. Open **Actions → Scan, check and publish dashboard → Run workflow**. Leave `refresh` and `use_ai` off to publish the saved snapshot without a new scan or AI charge.
 4. The workflow runs tests, validates the snapshot, builds the correct repository subdirectory, and deploys to Pages. The deployment provides the public URL.
 
-To refresh live data manually, run the same workflow with `refresh` enabled. AI is a separate checkbox. The first full scan must be checked for provider throttling, runtime, data quality and exchange coverage. Public display of provider prices and chart histories also requires appropriate data rights; yfinance is not a redistribution licence.
+To refresh live data manually, run the same workflow with `refresh` enabled. AI is a separate checkbox. The first broad Mac scan completed in about 33 minutes; GitHub Actions runtime and cloud-IP throttling still need validation. Public display of provider prices and chart histories also requires appropriate data rights; yfinance is not a redistribution licence.
 
 To enable unattended refreshes after validation, set these repository **Variables**:
 
@@ -75,7 +75,7 @@ Pushes and pull requests do not run paid AI. GitHub schedules may be delayed, ru
 
 The workflow validates temporary live output before replacing the saved snapshot. An empty, failed or invalid refresh leaves the deployed dashboard unchanged. It builds and deploys the scanner's bot commit in the same run, because that commit does not trigger a second workflow.
 
-Scan settings live in `config/defaults.json`. Liquidity filtering defaults to zero so thinly traded stocks are flagged rather than silently removed. Identified CDRs are excluded by default; this is configurable. Only confirmed CAD-traded listings pass the C$1 filter. Results are capped at the top 100 research candidates, with full scan counts retained. The first cold scan of several thousand symbols can be slow and has not yet been timed end to end.
+Scan settings live in `config/defaults.json`. Liquidity filtering defaults to zero so thinly traded stocks are flagged rather than silently removed. Identified CDRs are excluded by default; this is configurable. Only confirmed CAD-traded listings pass the C$1 filter. Results are capped at the top 100 research candidates, with full scan counts retained. The first broad Mac scan visited 4,669 discovered listings in about 33 minutes, including previously cached data. A fully cold cloud run has not been timed.
 
 ## Checks
 
@@ -99,7 +99,7 @@ npm run preview
 - Available cash, debt, growth, profitability and cash-flow evidence, with missing values and reporting currencies shown.
 - Separate fundamental and technical rankings, research explanations and risks.
 - Conditional entry ranges, target-price upside, invalidation downside, and reward/risk, using a stated 20-session window after entry.
-- Same-symbol historical entry diagnostics where sufficient daily history exists; forecast probabilities remain labelled **Not calibrated** until independently validated.
+- Same-symbol historical entry diagnostics and separately validated model probabilities for supported setups; unsupported estimates remain blank.
 - Expiry payoff examples for long calls, long puts, covered calls and protective puts using manually entered assumptions.
 
 Scores are screening heuristics, not return probabilities. Yahoo fundamentals alone cannot verify management quality, drill results, mine construction plans or future financing. Company filings and releases still need review. Options Lab does not retrieve chains or confirm TD account permissions and cannot value an option before expiry. See [architecture](docs/architecture.md) and [data contract](docs/data-contract.md) for implementation boundaries.
@@ -130,7 +130,7 @@ To reuse an already collected cohort without downloading again:
 python -m scanner.train_probability --train-only
 ```
 
-Training uses at least C$50,000 historical average daily traded value, restarts history after a reported split, and excludes unverified extreme price jumps. This is a present-day Yahoo constituent pilot, with survivorship and provider-data limitations, rather than a historical whole-market benchmark. Refresh the local dataset periodically and review the independent report before publishing a replacement artifact. Running the initial training on your Mac adds no server or AI expense.
+Training uses at least C$50,000 historical average daily traded value and 200 completed prior bars, restarts history after a reported split, and excludes unverified extreme price jumps. Production estimates require the same history warmup and liquidity. This is a present-day Yahoo constituent pilot, with survivorship and provider-data limitations, rather than a historical whole-market benchmark. Refresh the local dataset periodically and review the independent report before publishing a replacement artifact. Running the initial training on your Mac adds no server or AI expense.
 
 Method references: [probability calibration](https://scikit-learn.org/stable/modules/calibration.html), [CIRO guidance on stop-loss orders](https://www.ciro.ca/newsroom/publications/guidance-respecting-management-stop-loss-orders-0).
 

@@ -121,3 +121,9 @@ test('withholding an unsupported estimate remains a valid snapshot', () => {
   plan.probability.reason = 'This setup has too few independent test cases.';
   validateSnapshot(data);
 });
+
+test('an estimate cannot bypass the model history warmup', () => {
+  const { data, item } = estimatedScenario();
+  item.technicals.sma200 = null;
+  assert.throws(() => validateSnapshot(data), /probability history warmup/);
+});

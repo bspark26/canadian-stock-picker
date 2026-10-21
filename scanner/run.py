@@ -87,9 +87,36 @@ def opportunity(symbol, snapshot, frame, currency, payload):
     }
 
 
+def apply_probability_model(opportunities, histories, model):
+    """Apply the trained model only to verified completed OHLCV inputs."""
+    from .historical import _validated_frame
+    from .probability import predict_probability
+    for row in opportunities:
+        frame = histories.get(row["symbol"])
+        history_valid = _validated_frame(frame) is not None
+        if history_valid:
+            history_valid = frame.index[-1].date().isoformat() == row["priceAsOf"] and abs(float(frame.Close.iloc[-1]) - row["price"]) <= 0.000001
+        if not history_valid:
+            row["dataQuality"] = "Partial"
+            warning = "Probability withheld: completed daily OHLCV history failed validation or does not match this price timestamp."
+            if warning not in row["risks"]:
+                row["risks"].append(warning)
+        plan = row["tradePlan"]
+        # Compare against the published close, avoiding vendor float noise at
+        # an entry-zone boundary when reapplying a newer model to a snapshot.
+        if plan["status"] != "Unavailable":
+            plan["status"] = "Ready" if plan["entryLow"] <= row["price"] <= plan["entryHigh"] else "Wait"
+        plan["probability"] = predict_probability(
+            plan, row["technicals"],
+            {"price": row["price"], "averageDailyValue": row["averageDailyValue"], "setup": row["setup"], "historyValid": history_valid}, model,
+        )
+
+
 def live_scan(args, settings, source=None):
+    from .historical import _validated_frame, historical_evidence
     source = source or YahooSource(settings)
     warnings = ["Unofficial Yahoo/yfinance data is for personal research; data, adjustments and financial fields can be incomplete or erroneous. Scores are transparent heuristics, not forecasts or trade instructions.", "Fundamental evidence mixes the labelled annual cash-flow period with the latest balance sheet and vendor ratios; fundamentalsAsOf is the oldest statement period used. It is not the filing publication date."]
+    warnings.append("Yahoo's equity classification can include preferred shares, funds and CDRs; instrument types have not been reconciled to exchange directories.")
     if args.symbols:
         snapshots = [{"symbol": symbol.upper(), "quoteType": "EQUITY"} for symbol in dict.fromkeys(args.symbols)]
         warnings.append("Explicit --symbols smoke-test scope; this is not a whole-market scan.")
@@ -100,7 +127,7 @@ def live_scan(args, settings, source=None):
     if args.limit:
         snapshots = snapshots[:args.limit]
         warnings.append(f"Development --limit {args.limit} enabled; universe coverage is partial.")
-    scanned, failed, eligible, skipped_cdr, non_cad, fundamental_failures, stale = 0, 0, 0, 0, 0, 0, 0
+    scanned, failed, eligible, skipped_cdr, non_cad, fundamental_failures, stale, invalid_histories = 0, 0, 0, 0, 0, 0, 0, 0
     opportunities = []
     candidate_histories = {}
     for index, snapshot in enumerate(snapshots):
@@ -128,6 +155,10 @@ def live_scan(args, settings, source=None):
             daily_value = number((frame["Close"] * frame["Volume"]).tail(20).mean()) if len(frame) >= 20 else None
             if settings["min_average_daily_value"] > 0 and (daily_value is None or daily_value < settings["min_average_daily_value"]):
                 continue
+            if _validated_frame(frame) is None:
+                invalid_histories += 1
+                print(f"Excluded {symbol}: invalid completed daily OHLCV history", file=sys.stderr)
+                continue
             eligible += 1
             payload = {}
             if args.fundamental_limit is None or len(opportunities) < args.fundamental_limit:
@@ -154,6 +185,8 @@ def live_scan(args, settings, source=None):
         warnings.append(f"Daily history failed for {failed} listings; coverage is partial.")
     if stale:
         warnings.append(f"Excluded {stale} listings with future, insufficient or stale daily history (latest bar over 7 calendar days old); suspended/delisted prices are not active candidates.")
+    if invalid_histories:
+        warnings.append(f"Excluded {invalid_histories} listings with invalid completed daily OHLCV histories; no technical scores or entry scenarios were published for them.")
     if fundamental_failures:
         warnings.append(f"Fundamentals unavailable for {fundamental_failures} eligible listings; their missing financial values remain null.")
     if args.fundamental_limit is not None:
@@ -166,7 +199,6 @@ def live_scan(args, settings, source=None):
         warnings.append(f"Showing the top {settings['output_limit']} research candidates from {eligible} eligible listings; this is a display shortlist, not the entire universe.")
         opportunities = opportunities[:settings["output_limit"]]
     # Evaluate only the displayed shortlist; reuse fetched history without API calls.
-    from .historical import historical_evidence
     historical_failures = 0
     for row in opportunities:
         if row["tradePlan"]["status"] == "Unavailable":
@@ -177,21 +209,15 @@ def live_scan(args, settings, source=None):
             historical_failures += 1
             print(f"Historical diagnostic unavailable for {row['symbol']}: {type(exc).__name__}", file=sys.stderr)
     if historical_failures:
-        warnings.append(f"Historical entry diagnostics unavailable for {historical_failures} shortlist rows; forecast probabilities remain uncalibrated.")
+        warnings.append(f"Historical entry diagnostics unavailable for {historical_failures} shortlist rows; their same-symbol diagnostics were withheld.")
     # The locally trained JSON model runs here without another service or AI call.
     # Missing, stale or unsupported evidence fails closed on each individual plan.
-    from .probability import predict_probability
     model_path = ROOT / settings.get("probability_model", "models/probability.json")
     try:
         probability_model = json.loads(model_path.read_text())
     except (OSError, ValueError):
         probability_model = None
-    for row in opportunities:
-        row["tradePlan"]["probability"] = predict_probability(
-            row["tradePlan"], row["technicals"],
-            {"price": row["price"], "averageDailyValue": row["averageDailyValue"], "setup": row["setup"]},
-            probability_model,
-        )
+    apply_probability_model(opportunities, candidate_histories, probability_model)
     analyzed, model = 0, None
     if args.ai:
         from .ai import curate

@@ -15,7 +15,7 @@ def scenario():
         "entryLow": 10.1, "referenceEntry": 10.3, "entryHigh": 10.5,
         "target": 14, "rewardRisk": 3.5,
     }
-    metrics = {"atr14": 1, "rsi14": 55, "sma50": 10.5,
+    metrics = {"atr14": 1, "rsi14": 55, "sma50": 10.5, "sma200": 10.0,
                "return20d": 8, "relativeVolume": 1.2}
     context = {"price": 10.8, "averageDailyValue": 100000, "setup": "Range watch"}
     return plan, metrics, context
@@ -190,6 +190,30 @@ def test_validated_supported_inference_is_integer_conditional_estimate(fitted):
     assert result["validation"]["setupSamples"] >= 75
 
 
+@pytest.mark.parametrize("history_valid", [False, True])
+def test_explicit_daily_history_validation_flag_controls_probability(fitted, history_valid):
+    plan, metrics, context = _current(fitted)
+    context["historyValid"] = history_valid
+    result = predict_probability(plan, metrics, context, fitted)
+    if history_valid:
+        assert result["status"] == "Estimated"
+        assert isinstance(result["value"], int)
+    else:
+        assert result["status"] == "Insufficient evidence"
+        assert result["value"] is None
+        assert "OHLCV history failed validation" in result["reason"]
+
+
+@pytest.mark.parametrize("average", [None, 0, -1, float("nan")])
+def test_short_or_unverified_history_cannot_borrow_long_history_probability(fitted, average):
+    plan, metrics, context = _current(fitted)
+    metrics["sma200"] = average
+    result = predict_probability(plan, metrics, context, fitted)
+    assert result["status"] == "Insufficient evidence"
+    assert result["value"] is None
+    assert "200 completed daily bars" in result["reason"]
+
+
 def test_bad_individual_band_is_withheld_even_when_global_error_passes(fitted):
     artifact = deepcopy(fitted)
     artifact["validation"]["bins"][4]["predictedPercent"] = 81.0
@@ -281,7 +305,7 @@ def test_support_safety_gates_withhold(fitted, change, reason):
     elif change == "extrapolation":
         metrics["return20d"] = 200
     elif change == "missing":
-        metrics = {"atr14": 1}
+        metrics = {"atr14": 1, "sma200": 10.0}
     elif change == "invalid_plan":
         plan["invalidation"] = plan["target"]
     elif change == "bad_coefficients":

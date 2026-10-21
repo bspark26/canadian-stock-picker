@@ -417,8 +417,16 @@ def predict_probability(plan, technicals, context, artifact):
     """Return an integer-percent estimate only inside the validated support scope."""
     result = {"value": None, "status": "Insufficient evidence", "event": EVENT,
               "reason": "No validated probability artifact is available."}
+    context = context or {}
+    if context.get("historyValid") is False:
+        result["reason"] = "Completed daily OHLCV history failed validation; invalid price ranges cannot support this probability model."
+        return result
     if not _valid_plan(plan):
         result["reason"] = "A valid 20-session entry/target/invalidation scenario is required."
+        return result
+    long_average = _number((technicals or {}).get("sma200"))
+    if long_average is None or long_average <= 0:
+        result["reason"] = "At least 200 completed daily bars and an available positive 200-session average are required to match the model's training history."
         return result
     if not isinstance(artifact, dict) or artifact.get("status") != "Validated" or artifact.get("modelVersion") != MODEL_VERSION:
         if isinstance(artifact, dict) and isinstance(artifact.get("reason"), str):
@@ -443,7 +451,6 @@ def predict_probability(plan, technicals, context, artifact):
     if (day - latest_outcome).days > GATES["maxAgeDays"]:
         result["reason"] = "The held-out validation period is stale; fresh model training alone cannot refresh old evidence."
         return result
-    context = context or {}
     liquidity = _number(context.get("averageDailyValue"))
     price = _number(context.get("price"))
     setup = context.get("setup")

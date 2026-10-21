@@ -16,6 +16,7 @@ function validateProbability(probability, plan, item, mode) {
     return;
   }
   if (mode !== 'live' || plan.status === 'Unavailable') reject('unvalidated probability');
+  if (!isNumber(item.technicals?.sma200) || item.technicals.sma200 <= 0) reject('probability history warmup');
   if (!isNumber(probability.value) || !Number.isInteger(probability.value) || probability.value < 1 || probability.value > 99
     || typeof probability.modelVersion !== 'string' || !probability.modelVersion || !validDate(probability.asOf)) reject('unvalidated probability');
   const evidence = probability.validation;

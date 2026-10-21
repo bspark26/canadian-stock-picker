@@ -217,6 +217,8 @@ function isOpportunity(value: unknown): value is Opportunity {
     && (value.financialCurrency === undefined || nullableString(value.financialCurrency))
     && (value.optionsAvailable === null || typeof value.optionsAvailable === 'boolean')
     && (value.tradePlan === undefined || isTradePlan(value.tradePlan))
+    && (!record(value.tradePlan) || !record(value.tradePlan.probability) || value.tradePlan.probability.status !== 'Estimated'
+      || finite(value.technicals.sma200) && value.technicals.sma200 > 0)
     && Array.isArray(value.history) && value.history.every(point => record(point) && typeof point.date === 'string' && finite(point.close) && finite(point.volume))
     && Array.isArray(value.sources) && value.sources.every(source => record(source) && typeof source.label === 'string' && typeof source.url === 'string' && nullableString(source.asOf));
 }

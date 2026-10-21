@@ -398,3 +398,112 @@ td{font-size:14px;height:98px;padding-top:19px;padding-bottom:19px}
   .reward-risk-row{flex-wrap:wrap}
   .reward-risk-row>strong{margin-left:auto}
 }
+
+/* Personal dashboard: compact controls and data first. */
+body{color:#24382d}
+.app-header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:12px 24px;border-bottom:1px solid var(--border);background:#fff}
+.app-name{font-size:19px;font-weight:650;text-decoration:none;white-space:nowrap}
+.app-nav{display:flex;gap:6px;flex-wrap:wrap}
+.app-nav button{display:flex;align-items:center;gap:7px;background:transparent;padding:9px 13px;border-radius:5px;font-size:16px;color:#54624e;min-height:42px}
+.app-nav button.active{background:#e9efe6;color:#174f3e;font-weight:600}
+.functional-main{margin:0 auto;padding:22px 24px 40px;max-width:1700px}
+.scan-heading{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:12px}
+.scan-heading h1,.compact-heading h1{font-size:27px;letter-spacing:-.5px}
+.scan-heading p{font-size:14px;line-height:1.7;margin-top:4px;color:#5f6e57}
+.scan-heading .button{white-space:nowrap}
+.scan-facts{display:flex;flex-wrap:wrap;gap:8px 23px;font-size:14px;line-height:1.65;margin-bottom:9px;color:#5c6d52}
+.scan-facts strong{color:#263f2d}
+.compact-notice{margin:0 0 17px;padding:9px 13px}
+.compact-notice strong{text-transform:none;letter-spacing:0;font-size:14px}
+.compact-scan-details{font-size:14px;margin-bottom:18px;padding:0;background:none;border:0;color:#5c6d52}
+.compact-scan-details summary{font-size:14px;cursor:pointer}
+.compact-scan-details p,.compact-scan-details ul{font-size:14px;margin:8px 0;line-height:1.65}
+.compact-scan-details ul{padding-left:20px}
+.opportunities-heading{padding:16px 20px;align-items:center;gap:12px}
+.opportunities-heading h2{font-size:21px}
+.filter-bar{padding:0 20px 14px;gap:10px}
+.table-scroll th,.table-scroll td{padding-left:17px;padding-right:17px}
+td{height:82px;padding-top:14px;padding-bottom:14px}
+.table-footer{padding:13px 20px}
+.company-monogram{display:none}
+.company-button{gap:0}
+.company-button small{width:205px}
+.compact-heading{margin-bottom:18px}
+.configuration{padding:22px;margin-bottom:20px}
+.configuration h2,.model-evidence h2{font-size:22px;margin:0}
+.calculation-notes{padding:18px 22px;margin-top:20px}
+.calculation-notes summary,.plan-rules summary{cursor:pointer;font-weight:550;font-size:15px}
+.calculation-notes ul{padding-left:22px;margin:14px 0 0;font-size:15px;line-height:1.75}
+.calculation-notes li+li{margin-top:6px}
+.stock-dialog{max-width:1120px;padding-top:23px}
+.dialog-header{margin-bottom:15px}
+.stock-summary{font-size:17px;line-height:1.65;margin:0 0 8px}
+.detail-thesis{padding-top:19px;padding-bottom:19px}
+.evidence-grid{padding-top:20px;padding-bottom:20px}
+.evidence-grid h3{font-size:19px}
+.metric-context{font-size:13px;line-height:1.65}
+.trade-plan-heading{margin-bottom:13px;align-items:center}
+.trade-plan-heading h3{font-size:21px}
+.trade-plan-grid{gap:16px}
+.entry-plan-card,.probability-card{padding:18px}
+.entry-zone-label{font-size:14px;font-weight:550;color:#506747}
+.entry-zone-label small{font-size:13px;margin-left:7px}
+.entry-zone-value{font-size:25px;line-height:1.45;margin-top:5px;gap:8px}
+.entry-zone-value>span{font-size:19px}
+.entry-reference{font-size:14px;gap:8px;margin-top:8px;line-height:1.65}
+.scenario-levels{margin-top:16px}
+.scenario-levels>div{padding:10px 0;gap:12px}
+.scenario-levels>div>div{margin-right:auto}
+.scenario-levels>div>div>strong{font-size:20px}
+.scenario-return{font-size:16px}
+.reward-risk-row{font-size:14px;margin-top:10px;padding-top:10px}
+.plan-timing,.plan-return-basis{font-size:13px;line-height:1.7;margin-top:12px}
+.plan-timing{display:block}
+.plan-unavailable{font-size:14px;line-height:1.65;margin-top:14px}
+.probability-card h4{font-size:16px;line-height:1.5;margin:0;color:#48623c;letter-spacing:0}
+.probability-value{font-size:33px;font-weight:650;line-height:1.4;letter-spacing:-.5px;margin-top:7px}
+.probability-card:not(.probability-estimated) .probability-value{font-size:22px}
+.probability-lead,.probability-event-text{font-size:14px;line-height:1.7;margin-top:10px;color:#586b4b}
+.probability-sample-line{font-size:13px;line-height:1.75;margin-top:13px;color:#5f7353}
+.validation-details{margin-top:14px}
+.validation-details summary{font-size:14px}
+.validation-details p,.validation-details dl{font-size:13px;line-height:1.7}
+.validation-details p+p{margin-top:9px}
+.plan-rules{font-size:14px;margin-top:14px;padding:13px 0;border-top:1px solid var(--border)}
+.plan-rules strong{display:block;font-size:14px;font-weight:550;margin-top:12px}
+.plan-rules p{font-size:14px;line-height:1.7;margin-top:7px;color:#5c6d52}
+.historical-evidence{margin-top:0;padding-top:13px}
+.historical-evidence>summary{display:list-item;font-size:14px;cursor:pointer}
+.historical-evidence>summary:after{display:none}
+.model-evidence{padding:22px;margin-bottom:20px}
+.model-evidence-heading{align-items:center;gap:12px}
+.model-evidence-heading>.pill{margin:0}
+.model-evidence-metrics{padding:17px 0;gap:17px;margin-top:14px}
+.model-evidence-metrics strong{font-size:25px;line-height:1.3}
+.model-evidence-metrics>div{gap:4px}
+.model-evidence-metrics span{font-size:14px}
+.model-report-meta{margin-top:13px;font-size:13px}
+.model-report-empty{margin-top:13px;font-size:15px}
+.model-research-details{padding-top:12px;margin-top:13px}
+.model-research-details p,.model-research-details ul{font-size:14px;line-height:1.75;margin-top:12px}
+@media(max-width:760px){
+  .app-header{padding:12px 16px;align-items:flex-start;flex-direction:column;gap:8px}
+  .app-name{font-size:18px}
+  .app-nav{width:100%;gap:4px}
+  .app-nav button{font-size:15px;padding:8px 11px}
+  .functional-main{padding:18px 14px 30px}
+  .scan-heading{align-items:flex-start;gap:12px}
+  .scan-heading h1,.compact-heading h1{font-size:25px}
+  .scan-heading p{font-size:13px}
+  .scan-heading .button{font-size:13px;padding:9px 10px}
+  .scan-facts{font-size:13px;gap:5px 15px}
+  .opportunities-heading{padding:14px}
+  .filter-bar{padding-left:14px;padding-right:14px}
+  .filter-bar .select-wrap select{width:100%;max-width:none}
+  .opportunities-heading{flex-wrap:wrap}
+  .sort-control{display:flex}
+  .trade-plan-grid{grid-template-columns:1fr}
+  .entry-zone-value{font-size:25px}
+  .probability-value{font-size:32px}
+  .model-evidence-metrics{grid-template-columns:1fr;gap:15px}
+}
