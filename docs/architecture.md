@@ -10,7 +10,7 @@ Maple Signal is a personal Canadian equity research dashboard. It discovers a br
 4. A validated JSON snapshot is committed to `public/data/latest.json`.
 5. Vite builds a static React dashboard. GitHub Pages serves the built files publicly, without sign-in or a running application server.
 
-Dashboard filters operate on the saved shortlist. They do not trigger a fresh market scan. The separate Analyze tab calls a small on-demand backend for an exact stock symbol. It reuses the financial and technical calculations, adds short- and longer-term views, and does not change the shortlist. See [stock analysis](stock-analysis.md) for local use, the personal-AWS deployment package and the evidence limits. The public lookup is unavailable until its backend URL is configured and live tested.
+Dashboard filters operate on the saved shortlist. They do not trigger a fresh market scan. The separate Analyze tab calls a small on-demand backend for an exact stock symbol. It reuses the financial and technical calculations, adds short- and longer-term views, and does not change the shortlist. The personal-AWS backend is deployed and live tested; Pages receives its public URL through a repository variable. See [stock analysis](stock-analysis.md) for local use, deployment and the evidence limits.
 
 ## Reliability and cost
 

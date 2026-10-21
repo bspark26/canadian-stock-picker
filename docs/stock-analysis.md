@@ -6,6 +6,12 @@ Each report includes company finances, price indicators, a chart, a conditional 
 
 No OpenAI request, brokerage connection, portfolio data or API key is needed for this feature. The public frontend calls a narrow read-only backend; AWS credentials never reach the browser. Prices are completed daily bars, not live quotes.
 
+## Current deployment
+
+The backend was deployed and live tested on 2026-10-21 in the personal AWS account, in `ca-central-1`. The function/stack is `maple-signal-analysis`; private build storage uses `maple-signal-artifacts`. Local deployment uses the separate `maple-personal` CLI profile. Existing profiles were preserved. The public endpoint is configured through the GitHub repository variable `ANALYSIS_API_URL`.
+
+Fresh cloud lookups for `LSPD.TO`, `NEXG.V` and `AAPL` passed the real frontend response validator. The cached repeat preserved the original report timestamp; malformed symbols and unrelated browser origins were rejected. The account currently has a regional concurrency quota of ten, so the deployment uses that quota instead of a two-execution reservation. The atomic limit of 30 new analysis attempts per UTC day remains active.
+
 ## Local use
 
 Run these in separate terminals:

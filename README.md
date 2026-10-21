@@ -55,7 +55,7 @@ The dashboard uses plain labels such as Suggested buy range, Target sell price, 
 
 ## Analyze an individual stock
 
-The Analyze tab checks an exact Yahoo stock symbol outside the saved shortlist, with company finances, price indicators, a short-term trade plan and a 6–12 month financial outlook. The longer view does not invent a price target or confidence percentage. This uses a separate cached backend with no paid AI calls; see [setup and personal AWS deployment](docs/stock-analysis.md). It can be run locally while the personal AWS account is being connected.
+The Analyze tab checks an exact Yahoo stock symbol outside the saved shortlist, with company finances, price indicators, a short-term trade plan and a 6–12 month financial outlook. The longer view does not invent a price target or confidence percentage. The cached personal-AWS backend is deployed and uses no paid AI calls; see [setup and deployment](docs/stock-analysis.md). It can also be run locally.
 
 ## Optional AI
 
